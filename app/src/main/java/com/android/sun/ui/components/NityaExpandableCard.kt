@@ -17,7 +17,7 @@ import com.android.sun.domain.calculator.NityaResult
 @Composable
 fun NityaExpandableCard(
     currentNitya: NityaResult,
-    showCode: Boolean = false,
+    //showCode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     // ✅ Calculează procentul RĂMAS

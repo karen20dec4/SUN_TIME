@@ -15,7 +15,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.android.sun.data.model.PlanetInfo
-
 import com.android.sun.data.model.stopTime
 import com.android.sun.data.model.remaining
 import com.android.sun.data.model.getFormattedRemainingTime
@@ -106,78 +105,76 @@ fun PlanetCard(
                 )
             }
 
-            // Afișează timing-ul dacă există
-            if (planet.startTime != null && planet.stopTime != null) {
-                Spacer(modifier = Modifier.height(12.dp))
+            // Timing (start/stop) — afișat mereu (câmpurile sunt non-null în model)
+            Spacer(modifier = Modifier.height(12.dp))
 
-                Column(
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.Start
+            ) {
+                // Ora de început
+                Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.Start
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Ora de început
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                    Text(
+                        text = "Start:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = formatCalendar(planet.startTime),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Ora de sfârșit
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Stop:",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = formatCalendar(planet.stopTime),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+
+                // Timpul rămas dacă există
+                if (planet.remaining != "00:00:00") {
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .padding(12.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "Start:",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = formatCalendar(planet.startTime),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Ora de sfârșit
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "Stop:",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = formatCalendar(planet.stopTime),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    }
-
-                    // Timpul rămas dacă există
-                    if (planet.remaining != "00:00:00") {
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                                    shape = RoundedCornerShape(8.dp)
-                                )
-                                .padding(12.dp),
-                            contentAlignment = Alignment.Center
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                horizontalArrangement = Arrangement.Center,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Remaining: ",
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = planet.getFormattedRemainingTime(),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                            Text(
+                                text = "Remaining: ",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = planet.getFormattedRemainingTime(),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
                 }
