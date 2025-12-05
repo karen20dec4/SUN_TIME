@@ -7,6 +7,7 @@ data class LocationData(
     val name: String,           // Numele locației (ex: "București")
     val latitude: Double,       // Latitudine
     val longitude: Double,      // Longitudine
+    val altitude: Double = 0.0, // Altitudine în metri
     val timeZone: Double,       // Fus orar (ore UTC offset)
     val isCurrentLocation: Boolean = false  // Dacă e locația curentă GPS
 ) {
@@ -17,7 +18,7 @@ data class LocationData(
         val latDir = if (latitude >= 0) "N" else "S"
         val lonDir = if (longitude >= 0) "E" else "V"
         return "${String.format("%.4f", kotlin.math.abs(latitude))}°$latDir, " +
-               "${String.format("%.4f", kotlin.math.abs(longitude))}°$lonDir"
+               "${String.format("%.4f", kotlin.math. abs(longitude))}°$lonDir"
     }
     
     /**
@@ -26,5 +27,12 @@ data class LocationData(
     fun getFormattedTimeZone(): String {
         val sign = if (timeZone >= 0) "+" else ""
         return "UTC$sign${String.format("%.1f", timeZone)}"
+    }
+    
+    /**
+     * Formatează altitudinea
+     */
+    fun getFormattedAltitude(): String {
+        return "Alt: ${altitude.toInt()}m"
     }
 }

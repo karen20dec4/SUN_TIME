@@ -74,7 +74,7 @@ fun PlanetaryHoursCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
                     Spacer(modifier = Modifier.height(12.dp))
                     
                     // Date range

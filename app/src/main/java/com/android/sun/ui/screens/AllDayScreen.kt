@@ -1,5 +1,6 @@
 package com.android.sun.ui.screens
 
+import androidx.compose.material. icons.automirrored.filled.ArrowBack
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -113,7 +114,7 @@ fun AllDayScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -184,7 +185,7 @@ private fun CycleDelimiter(cycleNumber: Int) {
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Divider(
+        HorizontalDivider(
             modifier = Modifier.weight(1f),
             thickness = 1.dp,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
@@ -196,7 +197,7 @@ private fun CycleDelimiter(cycleNumber: Int) {
             modifier = Modifier.padding(horizontal = 16.dp),
             fontWeight = FontWeight.Bold
         )
-        Divider(
+        HorizontalDivider(
             modifier = Modifier.weight(1f),
             thickness = 1.dp,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)

@@ -1,13 +1,14 @@
-package com.android.sun.ui.screens
+package com.android.sun.ui. screens
 
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
+import androidx. compose.foundation.lazy.items
+import androidx.compose.material. icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose. material. icons.filled.Check
+import androidx.compose.material. icons.filled.Delete
+import androidx.compose.material. icons.filled.LocationOn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -40,8 +41,8 @@ fun LocationScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Înapoi"
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
                         )
                     }
                 }
@@ -75,7 +76,7 @@ fun LocationScreen(
                             text = errorMessage,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier. weight(1f)
                         )
                         TextButton(onClick = { viewModel.clearError() }) {
                             Text("OK")
@@ -94,11 +95,11 @@ fun LocationScreen(
                 onLoadGPS = { viewModel.loadGPSLocation() }
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier. height(16.dp))
 
-            Divider()
+            HorizontalDivider()
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier. height(16.dp))
 
             // Lista de locații salvate
             Text(
@@ -109,7 +110,7 @@ fun LocationScreen(
 
             if (isLoading && locations.isEmpty()) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier. fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator()
@@ -124,9 +125,9 @@ fun LocationScreen(
                     ) {
                         Text(
                             text = "Nu există locații salvate",
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography. bodyLarge
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier. height(8.dp))
                         Text(
                             text = "Folosește locația GPS sau adaugă manual",
                             style = MaterialTheme.typography.bodySmall,
@@ -141,7 +142,7 @@ fun LocationScreen(
                 ) {
                     items(
                         items = locations,
-                        key = { location -> location.name }
+                        key = { location -> location. name }
                     ) { location ->
                         LocationItem(
                             location = location,
@@ -166,30 +167,30 @@ private fun GPSLocationSection(
     onLoadGPS: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier. fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = MaterialTheme. colorScheme.primaryContainer
         )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(16. dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier. fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "📍 Locație GPS",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                    style = MaterialTheme. typography.titleMedium,
+                    color = MaterialTheme. colorScheme.onPrimaryContainer
                 )
 
                 if (isLoading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
+                        modifier = Modifier. size(24.dp),
                         strokeWidth = 2.dp
                     )
                 }
@@ -203,18 +204,18 @@ private fun GPSLocationSection(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     InfoRow(
-                        label = "Latitudine:",
-                        value = String.format("%.6f°", currentGPSLocation.latitude)
+                        label = "Lat:",
+                        value = String.format("%.4f°", currentGPSLocation.latitude)
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier. height(4.dp))
                     InfoRow(
-                        label = "Longitudine:",
-                        value = String.format("%.6f°", currentGPSLocation.longitude)
+                        label = "Lon:",
+                        value = String.format("%.4f°", currentGPSLocation.longitude)
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier. height(4.dp))
                     InfoRow(
-                        label = "Timezone:",
-                        value = "UTC${if (currentGPSLocation.timeZone >= 0) "+" else ""}${String.format("%.1f", currentGPSLocation.timeZone)}"
+                        label = "Alt:",
+                        value = "${currentGPSLocation.altitude. toInt()}m"
                     )
 
                     Spacer(modifier = Modifier.height(12.dp))
@@ -222,7 +223,7 @@ private fun GPSLocationSection(
                     // Buton pentru folosirea locației GPS
                     Button(
                         onClick = { onUseGPS(currentGPSLocation) },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier. fillMaxWidth(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
                         )
@@ -244,7 +245,7 @@ private fun GPSLocationSection(
                     enabled = !isLoading
                 ) {
                     Icon(
-                        imageVector = Icons.Default.LocationOn,
+                        imageVector = Icons. Default.LocationOn,
                         contentDescription = null,
                         modifier = Modifier.size(20.dp)
                     )
@@ -257,7 +258,7 @@ private fun GPSLocationSection(
                 Text(
                     text = "Apasă pentru a obține coordonatele GPS curente",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onPrimaryContainer. copy(alpha = 0.7f)
                 )
             }
         }
@@ -274,9 +275,9 @@ private fun LocationItem(
     onDelete: () -> Unit
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier. fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme. colorScheme.surfaceVariant
         )
     ) {
         Row(
@@ -290,7 +291,7 @@ private fun LocationItem(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = location.name,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme. typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
@@ -299,7 +300,7 @@ private fun LocationItem(
                 Text(
                     text = "Lat: ${String.format("%.4f", location.latitude)}°",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariant. copy(alpha = 0.7f)
                 )
 
                 Text(
@@ -309,7 +310,7 @@ private fun LocationItem(
                 )
 
                 Text(
-                    text = "Timezone: UTC${if (location.timeZone >= 0) "+" else ""}${String.format("%.1f", location.timeZone)}",
+                    text = location.getFormattedAltitude(),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                 )
@@ -334,7 +335,7 @@ private fun LocationItem(
                 IconButton(
                     onClick = onDelete,
                     colors = IconButtonDefaults.iconButtonColors(
-                        contentColor = MaterialTheme.colorScheme.error
+                        contentColor = MaterialTheme. colorScheme.error
                     )
                 ) {
                     Icon(
@@ -356,13 +357,13 @@ private fun InfoRow(
     value: String
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier. fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
+            color = MaterialTheme.colorScheme.onPrimaryContainer. copy(alpha = 0.8f)
         )
         Text(
             text = value,

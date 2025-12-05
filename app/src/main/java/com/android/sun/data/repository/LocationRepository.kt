@@ -1,20 +1,20 @@
 package com.android.sun.data.repository
 
-import android.Manifest
+import android. Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import androidx.core.content.ContextCompat
 import com.android.sun.data.database.PlaceDao
-import com.android.sun.data.database.PlaceDatabase
+import com.android.sun. data.database.PlaceDatabase
 import com.android.sun.data.database.PlaceEntity
-import com.android.sun.data.model.LocationData
-import com.android.sun.domain.calculator.Supplement
+import com.android.sun.data. model.LocationData
+import com.android.sun.domain.calculator. Supplement
 import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android.gms.location.LocationServices
-import com.google.android.gms.location.Priority
-import com.google.android.gms.tasks.CancellationTokenSource
-import kotlinx.coroutines.Dispatchers
+import com.google.android. gms.location.LocationServices
+import com.google.android. gms.location.Priority
+import com.google. android.gms.tasks.CancellationTokenSource
+import kotlinx.coroutines. Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -70,7 +70,7 @@ class LocationRepository(private val context: Context) {
      * Obține locația curentă de la GPS
      */
     suspend fun getCurrentLocation(): LocationData? = withContext(Dispatchers.IO) {
-        if (!hasLocationPermission()) {
+        if (! hasLocationPermission()) {
             return@withContext null
         }
 
@@ -80,6 +80,7 @@ class LocationRepository(private val context: Context) {
                 name = "Locație GPS Curentă",
                 latitude = location.latitude,
                 longitude = location.longitude,
+                altitude = location.altitude,
                 timeZone = getTimeZoneOffset(),
                 isCurrentLocation = true
             )
@@ -99,8 +100,8 @@ class LocationRepository(private val context: Context) {
         ) == PackageManager.PERMISSION_GRANTED ||
         ContextCompat.checkSelfPermission(
             context,
-            Manifest.permission.ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
+            Manifest.permission. ACCESS_COARSE_LOCATION
+        ) == PackageManager. PERMISSION_GRANTED
     }
 
     /**
@@ -111,8 +112,8 @@ class LocationRepository(private val context: Context) {
             val cancellationTokenSource = CancellationTokenSource()
 
             try {
-                fusedLocationClient.getCurrentLocation(
-                    Priority.PRIORITY_HIGH_ACCURACY,
+                fusedLocationClient. getCurrentLocation(
+                    Priority. PRIORITY_HIGH_ACCURACY,
                     cancellationTokenSource.token
                 ).addOnSuccessListener { location ->
                     if (location != null) {
@@ -130,7 +131,7 @@ class LocationRepository(private val context: Context) {
             }
 
             continuation.invokeOnCancellation {
-                cancellationTokenSource.cancel()
+                cancellationTokenSource. cancel()
             }
         }
 
@@ -145,12 +146,14 @@ class LocationRepository(private val context: Context) {
 
     /**
      * Convertește PlaceEntity (din DB) în LocationData
+     * NU MAI FOLOSIM supplement.deg() - coordonatele sunt deja în grade
      */
     private fun placeEntityToLocationData(place: PlaceEntity): LocationData {
         return LocationData(
             name = place.name,
-            longitude = supplement.deg(place.longitude),
-            latitude = supplement.deg(place.latitude),
+            longitude = place.longitude,
+            latitude = place.latitude,
+            altitude = place.altitude,
             timeZone = place.timeZone,
             isCurrentLocation = false
         )
@@ -158,14 +161,15 @@ class LocationRepository(private val context: Context) {
 
     /**
      * Convertește LocationData în PlaceEntity (pentru DB)
+     * NU MAI FOLOSIM supplement.grad() - salvăm direct în grade
      */
     private fun locationDataToPlace(location: LocationData): PlaceEntity {
         return PlaceEntity(
             name = location.name,
-            longitude = supplement.grad(location.longitude),
-            latitude = supplement.grad(location.latitude),
+            longitude = location.longitude,
+            latitude = location.latitude,
             timeZone = location.timeZone,
-            altitude = 0.0,
+            altitude = location.altitude,
             dst = 0
         )
     }

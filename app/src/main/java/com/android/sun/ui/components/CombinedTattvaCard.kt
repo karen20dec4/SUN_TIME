@@ -185,7 +185,7 @@ fun CombinedTattvaCard(
             }
             
             // Separator
-            Divider(
+            HorizontalDivider(
                 modifier = Modifier.fillMaxWidth(),
                 thickness = 2.dp,
                 color = MaterialTheme.colorScheme.surfaceVariant
