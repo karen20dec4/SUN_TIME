@@ -39,18 +39,22 @@ fun NityaExpandableCard(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // ✅ Titlu (stânga)
+            // ⬇️ MODIFICARE AICI: Aplicăm un weight mic pentru Titlu (stânga)
             Text(
                 text = "Nitya",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
-                fontSize = 21.sp
+                fontSize = 21.sp,
+                // Alocă o porțiune minimă necesară din lățime
+                modifier = Modifier.weight(0.3f, fill = false) // Folosim fill=false pentru a nu forța umplerea spațiului
             )
             
-            // ✅ Informații Nitya (dreapta)
+            // ⬇️ MODIFICARE AICI: Aplicăm un weight mai mare pentru Informații Nitya (dreapta)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
+                // Adăugăm .weight(0.7f) pentru a ocupa restul spațiului
+                modifier = Modifier.weight(0.7f),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 // Număr curent/total
