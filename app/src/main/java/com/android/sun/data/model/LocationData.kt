@@ -1,9 +1,10 @@
-package com.android.sun.data.model
+package com.android.sun.data. model
 
 /**
  * Date despre locație
  */
 data class LocationData(
+    val id: Int = 0,            // ID-ul din baza de date (pentru operații CRUD)
     val name: String,           // Numele locației (ex: "București")
     val latitude: Double,       // Latitudine
     val longitude: Double,      // Longitudine
@@ -18,7 +19,7 @@ data class LocationData(
         val latDir = if (latitude >= 0) "N" else "S"
         val lonDir = if (longitude >= 0) "E" else "V"
         return "${String.format("%.4f", kotlin.math.abs(latitude))}°$latDir, " +
-               "${String.format("%.4f", kotlin.math. abs(longitude))}°$lonDir"
+               "${String.format("%.4f", kotlin.math.abs(longitude))}°$lonDir"
     }
     
     /**
@@ -33,6 +34,6 @@ data class LocationData(
      * Formatează altitudinea
      */
     fun getFormattedAltitude(): String {
-        return "Alt: ${altitude.toInt()}m"
+        return "Alt: ${altitude. toInt()}m"
     }
 }

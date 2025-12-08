@@ -1,25 +1,25 @@
-package com.android.sun.data.repository
+package com.android.sun. data.repository
 
 import android. Manifest
-import android.content.Context
-import android.content.pm.PackageManager
+import android. content.Context
+import android.content.pm. PackageManager
 import android.location.Location
-import androidx.core.content.ContextCompat
-import com.android.sun.data.database.PlaceDao
+import androidx.core.content. ContextCompat
+import com.android. sun.data.database.PlaceDao
 import com.android.sun. data.database.PlaceDatabase
-import com.android.sun.data.database.PlaceEntity
+import com.android.sun. data.database.PlaceEntity
 import com.android.sun.data. model.LocationData
 import com.android.sun.domain.calculator. Supplement
-import com.google.android.gms.location.FusedLocationProviderClient
-import com.google.android. gms.location.LocationServices
-import com.google.android. gms.location.Priority
-import com.google. android.gms.tasks.CancellationTokenSource
+import com. google.android.gms.location.FusedLocationProviderClient
+import com.google.android. gms.location. LocationServices
+import com.google.android. gms.location. Priority
+import com.google.android. gms.tasks.CancellationTokenSource
 import kotlinx.coroutines. Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow. map
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlin.coroutines.resume
+import kotlin.coroutines. resume
 import kotlin.coroutines.resumeWithException
 
 /**
@@ -31,14 +31,14 @@ class LocationRepository(private val context: Context) {
     private val supplement = Supplement()
     private val placeDao: PlaceDao = PlaceDatabase.getDatabase(context).placeDao()
     private val fusedLocationClient: FusedLocationProviderClient =
-        LocationServices.getFusedLocationProviderClient(context)
+        LocationServices. getFusedLocationProviderClient(context)
 
     /**
      * Obține toate locațiile salvate din baza de date
      */
     fun getAllLocations(): Flow<List<LocationData>> {
         return placeDao.getAllPlaces().map { places ->
-            places.map { placeEntityToLocationData(it) }
+            places. map { placeEntityToLocationData(it) }
         }
     }
 
@@ -55,7 +55,7 @@ class LocationRepository(private val context: Context) {
      */
     suspend fun deleteLocation(location: LocationData) = withContext(Dispatchers.IO) {
         val entity = locationDataToPlace(location)
-        placeDao.deletePlace(entity)
+        placeDao. deletePlace(entity)
     }
 
     /**
@@ -77,6 +77,7 @@ class LocationRepository(private val context: Context) {
         try {
             val location = getCurrentLocationInternal()
             LocationData(
+                id = 0,  // GPS location nu are ID (nu e salvată în DB)
                 name = "Locație GPS Curentă",
                 latitude = location.latitude,
                 longitude = location.longitude,
@@ -85,7 +86,7 @@ class LocationRepository(private val context: Context) {
                 isCurrentLocation = true
             )
         } catch (e: Exception) {
-            e.printStackTrace()
+            e. printStackTrace()
             null
         }
     }
@@ -96,8 +97,8 @@ class LocationRepository(private val context: Context) {
     private fun hasLocationPermission(): Boolean {
         return ContextCompat.checkSelfPermission(
             context,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED ||
+            Manifest.permission. ACCESS_FINE_LOCATION
+        ) == PackageManager. PERMISSION_GRANTED ||
         ContextCompat.checkSelfPermission(
             context,
             Manifest.permission. ACCESS_COARSE_LOCATION
@@ -112,10 +113,10 @@ class LocationRepository(private val context: Context) {
             val cancellationTokenSource = CancellationTokenSource()
 
             try {
-                fusedLocationClient. getCurrentLocation(
+                fusedLocationClient.getCurrentLocation(
                     Priority. PRIORITY_HIGH_ACCURACY,
                     cancellationTokenSource.token
-                ).addOnSuccessListener { location ->
+                ). addOnSuccessListener { location ->
                     if (location != null) {
                         continuation.resume(location)
                     } else {
@@ -123,7 +124,7 @@ class LocationRepository(private val context: Context) {
                             Exception("Nu s-a putut obține locația GPS")
                         )
                     }
-                }.addOnFailureListener { exception ->
+                }. addOnFailureListener { exception ->
                     continuation.resumeWithException(exception)
                 }
             } catch (e: SecurityException) {
@@ -146,13 +147,14 @@ class LocationRepository(private val context: Context) {
 
     /**
      * Convertește PlaceEntity (din DB) în LocationData
-     * NU MAI FOLOSIM supplement.deg() - coordonatele sunt deja în grade
+     * IMPORTANT: Păstrăm ID-ul pentru operații DELETE/UPDATE
      */
     private fun placeEntityToLocationData(place: PlaceEntity): LocationData {
         return LocationData(
+            id = place.id,  // ✅ Păstrăm ID-ul din DB
             name = place.name,
             longitude = place.longitude,
-            latitude = place.latitude,
+            latitude = place. latitude,
             altitude = place.altitude,
             timeZone = place.timeZone,
             isCurrentLocation = false
@@ -161,15 +163,16 @@ class LocationRepository(private val context: Context) {
 
     /**
      * Convertește LocationData în PlaceEntity (pentru DB)
-     * NU MAI FOLOSIM supplement.grad() - salvăm direct în grade
+     * IMPORTANT: Folosim ID-ul pentru DELETE/UPDATE corecte
      */
     private fun locationDataToPlace(location: LocationData): PlaceEntity {
         return PlaceEntity(
+            id = location.id,  // ✅ Folosim ID-ul corect
             name = location.name,
-            longitude = location.longitude,
+            longitude = location. longitude,
             latitude = location.latitude,
-            timeZone = location.timeZone,
-            altitude = location.altitude,
+            timeZone = location. timeZone,
+            altitude = location. altitude,
             dst = 0
         )
     }
