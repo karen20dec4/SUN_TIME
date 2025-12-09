@@ -249,7 +249,8 @@ private fun CompactInfoCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "📍 ${astroData.locationName.ifEmpty { "Locație necunoscută" }}",
+                    
+					text = if (astroData. isGPSLocation) "GPS" else astroData.locationName. ifEmpty { "Unknown location" },
                     style = MaterialTheme.typography.titleMedium,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,

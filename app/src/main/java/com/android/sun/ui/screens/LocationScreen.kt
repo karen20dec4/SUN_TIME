@@ -1,5 +1,9 @@
 package com.android.sun.ui.screens
 
+import android. Manifest
+import android. content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx. activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
 import androidx. compose.foundation.clickable
 import androidx. compose.foundation.layout.*
@@ -7,25 +11,27 @@ import androidx. compose.foundation.lazy.LazyColumn
 import androidx.compose. foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose. material. icons.Icons
-import androidx.compose.material.icons.automirrored.filled. ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material. icons.filled.Add
-import androidx.compose.material. icons.filled.Check
+import androidx.compose.material.icons. filled.Check
 import androidx.compose.material.icons. filled.Delete
 import androidx.compose.material.icons. filled.KeyboardArrowDown
 import androidx.compose. material.icons.filled.KeyboardArrowUp
 import androidx. compose.material.icons.filled.LocationOn
 import androidx. compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx. compose.runtime.*
+import androidx.compose. runtime.saveable.rememberSaveable
 import androidx.compose. ui.Alignment
-import androidx.compose. ui.Modifier
-import androidx.compose. ui.text.font.FontWeight
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx. compose.ui.unit.dp
 import androidx.compose.ui. window.Dialog
+import androidx.core.content.ContextCompat
 import android.util.Log
 import com.android.sun. data.model.LocationData
-import com. android.sun.viewmodel.LocationViewModel
+import com.android.sun.viewmodel.LocationViewModel
 
 private const val TAG = "LocationScreen"
 
@@ -40,6 +46,7 @@ fun LocationScreen(
     onLocationSelected: (LocationData) -> Unit,
     onBack: () -> Unit
 ) {
+    val context = LocalContext.current
     val locations by viewModel.locations. collectAsState()
     val currentGPSLocation by viewModel.currentGPSLocation.collectAsState()
     val isLoading by viewModel. isLoading.collectAsState()
@@ -47,6 +54,51 @@ fun LocationScreen(
     
     // State pentru dialogul Add Location
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
+    
+    // Permission launcher pentru GPS
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts. RequestMultiplePermissions()
+    ) { permissions ->
+        val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
+        val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
+        
+        Log.d(TAG, "Permission result: fine=$fineLocationGranted, coarse=$coarseLocationGranted")
+        
+        if (fineLocationGranted || coarseLocationGranted) {
+            Log.d(TAG, "✅ Permission granted, loading GPS...")
+            viewModel. loadGPSLocation()
+        } else {
+            Log. e(TAG, "❌ Permission denied by user")
+        }
+    }
+    
+    // Funcție pentru a cere permisiuni și încărca GPS
+    fun requestGPSLocation() {
+        Log.d(TAG, "🔵 requestGPSLocation() called")
+        
+        val hasFinePermission = ContextCompat. checkSelfPermission(
+            context, Manifest.permission. ACCESS_FINE_LOCATION
+        ) == PackageManager. PERMISSION_GRANTED
+        
+        val hasCoarsePermission = ContextCompat.checkSelfPermission(
+            context, Manifest. permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+        
+        Log.d(TAG, "Current permissions: fine=$hasFinePermission, coarse=$hasCoarsePermission")
+        
+        if (hasFinePermission || hasCoarsePermission) {
+            Log.d(TAG, "✅ Already has permission, loading GPS...")
+            viewModel.loadGPSLocation()
+        } else {
+            Log. d(TAG, "🔵 Requesting permissions from user...")
+            permissionLauncher. launch(
+                arrayOf(
+                    Manifest.permission. ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                )
+            )
+        }
+    }
 
     Log.d(TAG, "LocationScreen: rendering, locations count = ${locations.size}")
 
@@ -57,7 +109,7 @@ fun LocationScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored. Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -86,12 +138,12 @@ fun LocationScreen(
                             .fillMaxWidth()
                             .padding(16. dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment. CenterVertically
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
                             text = errorMessage,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme. colorScheme.onErrorContainer,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.weight(1f)
                         )
                         TextButton(onClick = { viewModel.clearError() }) {
@@ -101,12 +153,12 @@ fun LocationScreen(
                 }
             }
 
-            // Secțiunea GPS
+            // Secțiunea GPS - folosește requestGPSLocation în loc de viewModel. loadGPSLocation
             GPSLocationSection(
                 currentGPSLocation = currentGPSLocation,
                 isLoading = isLoading,
                 onUseGPS = { onLocationSelected(it) },
-                onLoadGPS = { viewModel.loadGPSLocation() }
+                onLoadGPS = { requestGPSLocation() }  // ✅ Modificat aici! 
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -164,29 +216,57 @@ fun LocationScreen(
                         }
                     }
                 }
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(
-                            items = locations,
-                            key = { it.id }  // Folosim ID-ul ca key (mai stabil decât name)
-                        ) { location ->
-                            LocationItemCompact(
-                                location = location,
-                                onSelect = { 
-                                    Log.d(TAG, "Select clicked for: ${location.name}")
-                                    onLocationSelected(location) 
-                                },
-                                onDelete = { 
-                                    Log.d(TAG, "Delete clicked for: ${location.name}")
-                                    viewModel.deleteLocation(location)
-                                }
-                            )
-                        }
-                    }
-                }
+                
+				
+				
+				else -> {
+					LazyColumn(
+						modifier = Modifier. fillMaxSize(),
+						verticalArrangement = Arrangement. spacedBy(8.dp)
+					) {
+						items(
+							items = locations,
+							key = { it.id }
+						) { location ->
+							LocationItemCompact(
+								location = location,
+								onSelect = { 
+									Log. d(TAG, "Select clicked for: ${location.name}")
+									onLocationSelected(location) 
+								},
+								onDelete = { 
+									Log.d(TAG, "Delete clicked for: ${location.name}")
+									viewModel.deleteLocation(location)
+								}
+							)
+						}
+						
+						// ✅ Buton Load Defaults la sfârșitul listei
+						item(key = "load_defaults") {
+							Spacer(modifier = Modifier.height(16.dp))
+							
+							Button(
+								onClick = {
+									Log. d(TAG, "🔵 Load Defaults clicked")
+									viewModel.loadDefaultLocations()
+								},
+								modifier = Modifier.fillMaxWidth(),
+								colors = ButtonDefaults.buttonColors(
+									containerColor = MaterialTheme.colorScheme. secondary
+								)
+							) {
+								Text("Load Defaults")
+							}
+							
+							Spacer(modifier = Modifier.height(8. dp))
+						}
+					}
+				}
+				
+				
+				
+				
+				
             }
         }
     }
@@ -309,11 +389,11 @@ private fun AddLocationDialog(
                     TextButton(onClick = onDismiss) {
                         Text("Cancel")
                     }
-                    Spacer(Modifier.width(8.dp))
+                    Spacer(Modifier.width(8. dp))
                     Button(
                         onClick = {
                             val newLocation = LocationData(
-                                id = 0,  // Room va genera ID-ul automat
+                                id = 0,
                                 name = cityName. trim(),
                                 latitude = latitude.toDouble(),
                                 longitude = longitude.toDouble(),
@@ -326,11 +406,11 @@ private fun AddLocationDialog(
                         enabled = isValid
                     ) {
                         Icon(
-                            imageVector = Icons. Filled.Check,
+                            imageVector = Icons.Filled.Check,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )
-                        Spacer(Modifier.width(4.dp))
+                        Spacer(Modifier.width(4. dp))
                         Text("Save")
                     }
                 }
@@ -351,7 +431,7 @@ private fun GPSLocationSection(
 ) {
     Card(
         modifier = Modifier. fillMaxWidth(),
-        colors = CardDefaults. cardColors(
+        colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
     ) {
@@ -366,7 +446,7 @@ private fun GPSLocationSection(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "📍 GPS Location",
+                    text = "GPS Location",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
@@ -383,26 +463,29 @@ private fun GPSLocationSection(
             if (currentGPSLocation != null) {
                 Column(Modifier.fillMaxWidth()) {
                     InfoRow(label = "Lat:", value = String.format("%.4f°", currentGPSLocation.latitude))
-                    Spacer(Modifier.height(4.dp))
-                    InfoRow(label = "Lon:", value = String.format("%.4f°", currentGPSLocation.longitude))
-                    Spacer(Modifier.height(4.dp))
+                    Spacer(Modifier.height(4. dp))
+                    InfoRow(label = "Lon:", value = String. format("%.4f°", currentGPSLocation.longitude))
+                    Spacer(Modifier. height(4.dp))
                     InfoRow(label = "Alt:", value = "${currentGPSLocation.altitude. toInt()}m")
 
                     Spacer(Modifier.height(12.dp))
 
                     Button(
                         onClick = { onUseGPS(currentGPSLocation) },
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier. fillMaxWidth(),
                         colors = ButtonDefaults. buttonColors(containerColor = MaterialTheme.colorScheme. primary)
                     ) {
                         Icon(imageVector = Icons. Filled.Check, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(8.dp))
+                        Spacer(Modifier.width(8. dp))
                         Text("Use this location")
                     }
                 }
             } else {
                 Button(
-                    onClick = onLoadGPS,
+                    onClick = {
+                        Log.d(TAG, "🔵 Get GPS Location button clicked")
+                        onLoadGPS()
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isLoading
                 ) {
@@ -423,106 +506,120 @@ private fun GPSLocationSection(
     }
 }
 
-/**
- * Item compact cu expand/collapse intern
- */
-@Composable
-private fun LocationItemCompact(
-    location: LocationData,
-    onSelect: () -> Unit,
-    onDelete: () -> Unit
-) {
-    var expanded by rememberSaveable(location. id) { mutableStateOf(false) }
+		/**
+		 * Item compact cu expand/collapse intern
+		 * ✅ București nu poate fi șters (nu afișăm butonul Delete)
+		 */
+		@Composable
+		private fun LocationItemCompact(
+			location:  LocationData,
+			onSelect: () -> Unit,
+			onDelete: () -> Unit
+		) {
+			var expanded by rememberSaveable(location. id) { mutableStateOf(false) }
+			
+			// ✅ București nu poate fi șters
+			val canDelete = location.name != "București"
 
-    Log.d(TAG, "LocationItemCompact rendering: ${location.name}")
+			Log.d(TAG, "LocationItemCompact rendering:  ${location.name}, canDelete=$canDelete")
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            . animateContentSize(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme. colorScheme.surfaceVariant
-        )
-    ) {
-        Column(Modifier.fillMaxWidth()) {
-            // Bara compactă
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Nume oraș (click → expand/collapse)
-                Text(
-                    text = location.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 8.dp)
-                        .clickable { 
-                            Log.d(TAG, "City name clicked: ${location.name}")
-                            expanded = !expanded 
-                        }
-                )
+			Card(
+				modifier = Modifier
+					. fillMaxWidth()
+					.animateContentSize(),
+				colors = CardDefaults. cardColors(
+					containerColor = MaterialTheme.colorScheme.surfaceVariant
+				)
+			) {
+				Column(Modifier. fillMaxWidth()) {
+					// Bara compactă
+					Row(
+						modifier = Modifier
+							.fillMaxWidth()
+							.padding(horizontal = 16.dp, vertical = 12.dp),
+						horizontalArrangement = Arrangement.SpaceBetween,
+						verticalAlignment = Alignment.CenterVertically
+					) {
+						// Nume oraș (click → expand/collapse)
+						Text(
+							text = location.name,
+							style = MaterialTheme.typography.titleMedium,
+							color = MaterialTheme. colorScheme.onSurfaceVariant,
+							modifier = Modifier
+								.weight(1f)
+								.padding(end = 8.dp)
+								.clickable { 
+									Log.d(TAG, "City name clicked: ${location. name}")
+									expanded = !expanded 
+								}
+						)
 
-                // Expand / Collapse
-                IconButton(onClick = { 
-                    Log.d(TAG, "Expand/Collapse clicked: ${location.name}")
-                    expanded = !expanded 
-                }) {
-                    Icon(
-                        imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                        contentDescription = if (expanded) "Collapse" else "Expand"
-                    )
-                }
+						// Expand / Collapse
+						IconButton(onClick = { 
+							Log.d(TAG, "Expand/Collapse clicked:  ${location.name}")
+							expanded = !expanded 
+						}) {
+							Icon(
+								imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+								contentDescription = if (expanded) "Collapse" else "Expand"
+							)
+						}
 
-                // Delete Button
-                IconButton(
-                    onClick = {
-                        Log. d(TAG, "DELETE BUTTON CLICKED for: ${location.name}")
-                        onDelete()
-                    },
-                    colors = IconButtonDefaults.iconButtonColors(
-                        contentColor = MaterialTheme.colorScheme. error
-                    )
-                ) {
-                    Icon(imageVector = Icons. Filled.Delete, contentDescription = "Delete location")
-                }
+						// ✅ Delete Button - doar dacă NU este București
+						if (canDelete) {
+							IconButton(
+								onClick = {
+									Log. d(TAG, "DELETE BUTTON CLICKED for:  ${location.name}")
+									onDelete()
+								},
+								colors = IconButtonDefaults.iconButtonColors(
+									contentColor = MaterialTheme.colorScheme. error
+								)
+							) {
+								Icon(imageVector = Icons. Filled.Delete, contentDescription = "Delete location")
+							}
+						} else {
+							// ✅ Placeholder pentru a păstra alinierea (sau poți să nu pui nimic)
+							Spacer(modifier = Modifier.size(48.dp))
+						}
 
-                // Select Button
-                TextButton(
-                    onClick = {
-                        Log. d(TAG, "SELECT BUTTON CLICKED for: ${location. name}")
-                        onSelect()
-                    },
-                    colors = ButtonDefaults.textButtonColors(
-                        contentColor = MaterialTheme.colorScheme. primary
-                    )
-                ) {
-                    Text("Select")
-                }
-            }
+						// Select Button
+						TextButton(
+							onClick = {
+								Log. d(TAG, "SELECT BUTTON CLICKED for: ${location. name}")
+								onSelect()
+							},
+							colors = ButtonDefaults.textButtonColors(
+								contentColor = MaterialTheme.colorScheme. primary
+							)
+						) {
+							Text("Select")
+						}
+					}
 
-            // Detalii expandate
-            if (expanded) {
-                Column(
-                    modifier = Modifier
-                        . fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp)
-                ) {
-                    InfoRow(label = "Lat:", value = String.format("%.4f°°", location.latitude))
-                    Spacer(Modifier.height(4.dp))
-                    InfoRow(label = "Lon:", value = String. format("%.4f°", location.longitude))
-                    Spacer(Modifier.height(4. dp))
-                    InfoRow(label = "Alt:", value = location.getFormattedAltitude())
-                    Spacer(Modifier.height(8.dp))
-                }
-            }
-        }
-    }
-}
+					// Detalii expandate
+					if (expanded) {
+						Column(
+							modifier = Modifier
+								.fillMaxWidth()
+								. padding(horizontal = 16.dp, vertical = 8.dp)
+						) {
+							InfoRow(label = "Lat:", value = String.format("%.4f°", location.latitude))
+							Spacer(Modifier.height(4.dp))
+							InfoRow(label = "Lon:", value = String.format("%.4f°", location.longitude))
+							Spacer(Modifier. height(4.dp))
+							InfoRow(label = "Alt:", value = location.getFormattedAltitude())
+							Spacer(Modifier.height(8.dp))
+						}
+					}
+				}
+			}
+		}
+
+
+
+
+
 
 /**
  * Component helper pentru afișarea info (label: valoare)
@@ -539,11 +636,11 @@ private fun InfoRow(
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme. onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = value,
-            style = MaterialTheme. typography.bodyMedium,
+            style = MaterialTheme.typography. bodyMedium,
             color = MaterialTheme.colorScheme. onSurfaceVariant,
             fontWeight = FontWeight. Bold
         )

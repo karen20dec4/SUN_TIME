@@ -22,6 +22,7 @@ data class AstroData(
     val sunSign: String,
     val moonSign: String,
     val locationName: String,
+	val isGPSLocation: Boolean = false,
     val latitude: Double,
     val longitude: Double,
     val timeZone: Double

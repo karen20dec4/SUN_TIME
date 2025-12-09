@@ -32,10 +32,11 @@ class AstroRepository(private val context: Context) {
         latitude: Double,
         longitude: Double,
         timeZone: Double,
-        locationName: String
+        locationName: String,
+		isGPSLocation: Boolean = false
     ): AstroData = withContext(Dispatchers.Default) {
         val currentTime = Calendar.getInstance()
-        calculateAstroDataForTime(currentTime, latitude, longitude, timeZone, locationName)
+        calculateAstroDataForTime(currentTime, latitude, longitude, timeZone, locationName, isGPSLocation)
     }
 
     /**
@@ -101,7 +102,8 @@ class AstroRepository(private val context: Context) {
         latitude: Double,
         longitude: Double,
         timeZone: Double,
-        locationName: String
+        locationName: String,
+		isGPSLocation: Boolean = false
     ): AstroData {
         val year = calendar.get(Calendar.YEAR)
         val month = calendar.get(Calendar.MONTH) + 1
@@ -204,6 +206,7 @@ class AstroRepository(private val context: Context) {
             sunSign = sunSign,
             moonSign = moonSign,
             locationName = locationName,
+			isGPSLocation = isGPSLocation,
             latitude = latitude,
             longitude = longitude,
             timeZone = timeZone
