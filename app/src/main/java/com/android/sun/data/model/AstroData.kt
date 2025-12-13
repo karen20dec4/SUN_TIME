@@ -1,4 +1,4 @@
-package com.android.sun.data.model
+package com.android.sun.data. model
 
 import com.android.sun.domain.calculator.*
 import java.util.*
@@ -22,8 +22,13 @@ data class AstroData(
     val sunSign: String,
     val moonSign: String,
     val locationName: String,
-	val isGPSLocation: Boolean = false,
+    val isGPSLocation:  Boolean = false,
     val latitude: Double,
     val longitude: Double,
-    val timeZone: Double
+    val timeZone: Double,
+    // ✅ POLARITATE - Ida/Pingala
+    val sunrisePolarity:  Int = 1,              // +1 = Pingala, -1 = Ida
+    val sunsetPolarity: Int = -1,              // +1 = Pingala, -1 = Ida
+    val sunrisePolaritySymbol: String = "(+)", // "(+)" sau "(-)"
+    val sunsetPolaritySymbol: String = "(-)"   // "(+)" sau "(-)"
 )

@@ -34,6 +34,6 @@ data class LocationData(
      * Formatează altitudinea
      */
     fun getFormattedAltitude(): String {
-        return "Alt: ${altitude. toInt()}m"
+        return "${altitude. toInt()}m"
     }
 }

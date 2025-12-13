@@ -90,6 +90,24 @@ class LocationRepository(private val context: Context) {
 	
 	
 	
+	/**
+	 * ✅ Verifică dacă o locație cu acest nume există în DB
+	 */
+	suspend fun locationExistsByName(name: String): Boolean = withContext(Dispatchers.IO) {
+		val place = placeDao.getPlaceByName(name)
+		val exists = place != null
+		android.util.Log. d("LocationRepository", "🔍 Location '$name' exists:  $exists")
+		exists
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
     /**
      * ✅ Încarcă locațiile predefinite (toate orașele din România)
      * Folosește REPLACE pentru a nu duplica dacă există deja
@@ -123,7 +141,8 @@ class LocationRepository(private val context: Context) {
             PlaceEntity(name = "Sibiu", longitude = 24.1521, latitude = 45.7928, altitude = 415.0, timeZone = 2.0, dst = 0),
             PlaceEntity(name = "Șirnea", longitude = 25.2547, latitude = 45.4714, altitude = 1150.0, timeZone = 2.0, dst = 0),
             PlaceEntity(name = "Târgu Mureș", longitude = 24.5575, latitude = 46.5425, altitude = 308.0, timeZone = 2.0, dst = 0),
-            PlaceEntity(name = "Timișoara", longitude = 21.2087, latitude = 45.7489, altitude = 90.0, timeZone = 2.0, dst = 0)
+            PlaceEntity(name = "Timișoara", longitude = 21.2087, latitude = 45.7489, altitude = 90.0, timeZone = 2.0, dst = 0),
+			PlaceEntity(name = "Tulcea", longitude = 28.8050, latitude = 45.1787, altitude = 50.0, timeZone = 2.0, dst = 0)
         )
         
         defaultCities.forEach { city ->

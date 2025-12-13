@@ -1,16 +1,17 @@
 package com.android.sun.viewmodel
 
 import android.app.Application
-import androidx.lifecycle. AndroidViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com. android.sun.data.model.AstroData
-import com.android.sun. data.model.LocationData
+import com.android.sun.data.model.AstroData
+import com.android.sun.data.model. LocationData
 import com.android.sun.data.repository.AstroRepository
+import com.android.sun.data.repository.LocationPreferences
 import com.android.sun.data.repository.LocationRepository
 import kotlinx.coroutines.Job
-import kotlinx. coroutines.delay
-import kotlinx. coroutines.flow.MutableStateFlow
-import kotlinx. coroutines.flow.StateFlow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.util.*
@@ -22,6 +23,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private val astroRepository = AstroRepository(application)
     private val locationRepository = LocationRepository(application)
+    private val locationPreferences = LocationPreferences(application)
 
     // State pentru date astrologice
     private val _astroData = MutableStateFlow<AstroData?>(null)
@@ -32,7 +34,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
     // State pentru erori
-    private val _error = MutableStateFlow<String?>(null)
+    private val _error = MutableStateFlow<String? >(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
     // State pentru locația curentă
@@ -47,38 +49,130 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private var updateJob: Job?  = null
 
     init {
-        // Încarcă datele inițiale
-        loadCurrentLocation()
+        android.util.Log. d("MainViewModel", "🔵 init called")
+        
+        // ✅ Încarcă locația salvată SINCRON (fără coroutine)
+        loadSavedLocationSync()
+        
+        // ✅ Calculează datele astro
+        calculateAstroData()
+        
+        // ✅ Pornește actualizările
         startRealtimeUpdates()
     }
 
     /**
-     * Încarcă locația curentă și calculează datele
+     * ✅ Încarcă locația salvată SINCRON din SharedPreferences
+     * Nu verifică DB-ul aici - verificarea se face în reloadSavedLocation()
      */
-    private fun loadCurrentLocation() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                // Încearcă să obții locația GPS
-                val gpsLocation = locationRepository.getCurrentLocation()
-                if (gpsLocation != null) {
-                    _currentLocation.value = gpsLocation
-                }
-                
-                // Calculează datele astrologice
-                calculateAstroData()
-            } catch (e: Exception) {
-                _error. value = "Eroare la încărcarea locației: ${e.message}"
-                e.printStackTrace()
-            } finally {
-                _isLoading. value = false
-            }
+    private fun loadSavedLocationSync() {
+        android.util.Log.d("MainViewModel", "🔵 loadSavedLocationSync() called")
+        
+        if (locationPreferences. hasSavedLocation()) {
+            val savedLocation = LocationData(
+                id = locationPreferences. getSavedLocationId(),
+                name = locationPreferences.getSavedLocationName(),
+                latitude = locationPreferences.getSavedLatitude(),
+                longitude = locationPreferences. getSavedLongitude(),
+                altitude = locationPreferences. getSavedAltitude(),
+                timeZone = locationPreferences.getSavedTimeZone(),
+                isCurrentLocation = locationPreferences.isSavedLocationGPS()
+            )
+            
+            android.util.Log. d("MainViewModel", "✅ Loaded saved location: ${savedLocation.name} (${savedLocation.latitude}, ${savedLocation.longitude})")
+            _currentLocation.value = savedLocation
+        } else {
+            android.util.Log. d("MainViewModel", "⚠️ No saved location, using București")
+            _currentLocation.value = getDefaultLocation()
         }
     }
 
-    /**
+    
+	
+		/**
+		 * ✅ Reîncarcă locația salvată (apelat când revii la ecranul principal)
+		 */
+		fun reloadSavedLocation() {
+			android.util.Log.d("MainViewModel", "🔵 reloadSavedLocation() called")
+			
+			viewModelScope. launch {
+				val oldLocation = _currentLocation. value
+				
+				if (locationPreferences. hasSavedLocation()) {
+					val savedName = locationPreferences.getSavedLocationName()
+					val savedIsGPS = locationPreferences. isSavedLocationGPS()
+					
+					if (savedIsGPS) {
+						// GPS location
+						_currentLocation.value = LocationData(
+							id = locationPreferences.getSavedLocationId(),
+							name = savedName,
+							latitude = locationPreferences. getSavedLatitude(),
+							longitude = locationPreferences. getSavedLongitude(),
+							altitude = locationPreferences.getSavedAltitude(),
+							timeZone = locationPreferences.getSavedTimeZone(),
+							isCurrentLocation = true
+						)
+					} else {
+						// Verifică DB
+						val existsInDB = locationRepository.locationExistsByName(savedName)
+						
+						if (existsInDB) {
+							_currentLocation.value = LocationData(
+								id = locationPreferences.getSavedLocationId(),
+								name = savedName,
+								latitude = locationPreferences. getSavedLatitude(),
+								longitude = locationPreferences. getSavedLongitude(),
+								altitude = locationPreferences.getSavedAltitude(),
+								timeZone = locationPreferences.getSavedTimeZone(),
+								isCurrentLocation = false
+							)
+						} else {
+							android.util.Log. w("MainViewModel", "⚠️ '$savedName' not in DB, resetting")
+							resetToDefaultLocation()
+						}
+					}
+				} else {
+					_currentLocation.value = getDefaultLocation()
+				}
+				
+				// ✅ Recalculează dacă locația s-a schimbat
+				val newLocation = _currentLocation.value
+				if (oldLocation. name != newLocation. name || 
+					oldLocation. latitude != newLocation. latitude ||
+					oldLocation. longitude != newLocation. longitude) {
+					android.util.Log. d("MainViewModel", "🔄 Location changed, recalculating...")
+					calculateAstroData()
+				}
+			}
+		}
+
+
+	/**
+	 * ✅ Resetează la București și salvează în preferences
+	 */
+	private fun resetToDefaultLocation() {
+		val defaultLocation = getDefaultLocation()
+		_currentLocation.value = defaultLocation
+		
+		locationPreferences.saveSelectedLocation(
+			id = 0,
+			name = defaultLocation.name,
+			latitude = defaultLocation.latitude,
+			longitude = defaultLocation. longitude,
+			altitude = defaultLocation.altitude,
+			timeZone = defaultLocation. timeZone,
+			isGPS = false
+		)
+		
+		android.util.Log.d("MainViewModel", "✅ Reset to București and saved to preferences")
+	}
+
+
+
+
+	/**
 	 * Calculează datele astrologice pentru locația curentă
-	 * ✅ Dacă nu există locație validă, folosește București ca default
 	 */
 	fun calculateAstroData() {
 		viewModelScope.launch {
@@ -86,70 +180,64 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 			_error.value = null
 			
 			try {
-				var location = _currentLocation.value
+				val location = _currentLocation.value
 				
-				// ✅ Verifică dacă locația este validă (coordonate non-zero)
-				if (location.latitude == 0.0 && location.longitude == 0.0) {
-					android.util.Log. w("MainViewModel", "⚠️ Invalid location, using București as default")
-					location = getDefaultLocation()
-					_currentLocation.value = location
-				}
+				android.util.Log.d("MainViewModel", "🔵 Calculating for:  ${location.name} (${location.latitude}, ${location.longitude})")
 				
 				val data = astroRepository.calculateAstroData(
 					latitude = location.latitude,
 					longitude = location.longitude,
-					timeZone = location. timeZone,
+					timeZone = location.timeZone,
 					locationName = location.name,
 					isGPSLocation = location.isCurrentLocation
 				)
 				_astroData.value = data
+				
+				android.util.Log. d("MainViewModel", "✅ Done:  sunrise=${data.sunriseFormatted}")
 			} catch (e:  Exception) {
-				_error.value = "Eroare la calcularea datelor:  ${e.message}"
-				android.util.Log. e("MainViewModel", "❌ Error:  ${e.message}")
+				_error.value = "Error: ${e.message}"
+				android. util.Log.e("MainViewModel", "❌ Error:  ${e.message}")
 				e.printStackTrace()
-			} finally {
-				_isLoading. value = false
 			}
+			
+			// ✅ ÎNTOTDEAUNA setează loading = false, chiar și după eroare
+			_isLoading.value = false
+			android.util.Log. d("MainViewModel", "🔵 isLoading set to false")
 		}
 	}
-	
-	
-	
-	
-	
+
+
+
+
 
     /**
-     * ✅ OPTIMIZAT: Pornește actualizările în timp real
-     * Recalculează DOAR când se schimbă Tattva/SubTattva, NU la fiecare secundă!
+     * Pornește actualizările în timp real
      */
     fun startRealtimeUpdates() {
         updateJob?.cancel()
         updateJob = viewModelScope.launch {
-            var lastTattvaTime: Calendar?  = null
-            var lastSubTattvaTime: Calendar? = null
+            var lastTattvaTime:  Calendar? = null
+            var lastSubTattvaTime: Calendar?  = null
             
             while (true) {
-                delay(1000) // Verifică la fiecare secundă
+                delay(1000)
                 
-                val currentData = _astroData. value
+                val currentData = _astroData.value
                 
                 if (currentData != null) {
                     val currentTime = Calendar.getInstance()
                     
-                    // ✅ Recalculează DOAR dacă Tattva sau SubTattva s-a schimbat
                     val tattvaChanged = lastTattvaTime == null || 
                         currentTime.timeInMillis >= currentData.tattva.endTime. timeInMillis
                     
                     val subTattvaChanged = lastSubTattvaTime == null || 
-                        currentTime.timeInMillis >= currentData.subTattva.endTime.timeInMillis
+                        currentTime.timeInMillis >= currentData.subTattva.endTime. timeInMillis
                     
                     if (tattvaChanged || subTattvaChanged) {
-                        // Doar când se schimbă Tattva/SubTattva, recalculăm
                         calculateAstroData()
                         lastTattvaTime = currentTime
                         lastSubTattvaTime = currentTime
                     }
-                    // Altfel, NU facem nimic!  Timpul rămas se actualizează automat în UI
                 }
             }
         }
@@ -159,7 +247,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
      * Oprește actualizările în timp real
      */
     fun stopRealtimeUpdates() {
-        updateJob?. cancel()
+        updateJob?.cancel()
         updateJob = null
     }
 
@@ -171,10 +259,24 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Setează o nouă locație
+     * Setează o nouă locație și o salvează în SharedPreferences
      */
     fun setLocation(location: LocationData) {
+        android.util.Log.d("MainViewModel", "🔵 setLocation: ${location.name} (${location.latitude}, ${location.longitude})")
+        
         _currentLocation.value = location
+        
+        // Salvează în SharedPreferences
+        locationPreferences.saveSelectedLocation(
+            id = location.id,
+            name = location. name,
+            latitude = location.latitude,
+            longitude = location.longitude,
+            altitude = location.altitude,
+            timeZone = location.timeZone,
+            isGPS = location.isCurrentLocation
+        )
+        
         calculateAstroData()
     }
 
@@ -194,13 +296,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             name = "București",
             latitude = 44.4268,
             longitude = 26.1025,
+            altitude = 80.0,
             timeZone = 2.0,
             isCurrentLocation = false
         )
     }
 
     override fun onCleared() {
-        super. onCleared()
+        super.onCleared()
         stopRealtimeUpdates()
     }
 }

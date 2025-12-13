@@ -257,6 +257,14 @@ abstract class PlaceDatabase : RoomDatabase() {
                         altitude = 90.0,
                         timeZone = 2.0,
                         dst = 0
+                    ),
+					PlaceEntity(
+                        name = "Tulcea",
+                        longitude = 28.8050,
+                        latitude = 45.1787,
+                        altitude = 50.0,
+                        timeZone = 2.0,
+                        dst = 0
                     )
                 )
                 

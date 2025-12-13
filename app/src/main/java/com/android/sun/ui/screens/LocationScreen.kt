@@ -1,36 +1,36 @@
 package com.android.sun.ui.screens
 
-import android. Manifest
-import android. content.pm.PackageManager
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx. activity.result.contract.ActivityResultContracts
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateContentSize
-import androidx. compose.foundation.clickable
-import androidx. compose.foundation.layout.*
-import androidx. compose.foundation.lazy.LazyColumn
-import androidx.compose. foundation.lazy.items
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose. material. icons.Icons
+import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material. icons.filled.Add
-import androidx.compose.material.icons. filled.Check
-import androidx.compose.material.icons. filled.Delete
-import androidx.compose.material.icons. filled.KeyboardArrowDown
-import androidx.compose. material.icons.filled.KeyboardArrowUp
-import androidx. compose.material.icons.filled.LocationOn
-import androidx. compose.material3.*
-import androidx. compose.runtime.*
-import androidx.compose. runtime.saveable.rememberSaveable
-import androidx.compose. ui.Alignment
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx. compose.ui.unit.dp
-import androidx.compose.ui. window.Dialog
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import android.util.Log
-import com.android.sun. data.model.LocationData
+import com.android.sun.data.model.LocationData
 import com.android.sun.viewmodel.LocationViewModel
 
 private const val TAG = "LocationScreen"
@@ -47,17 +47,17 @@ fun LocationScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val locations by viewModel.locations. collectAsState()
+    val locations by viewModel.locations.collectAsState()
     val currentGPSLocation by viewModel.currentGPSLocation.collectAsState()
-    val isLoading by viewModel. isLoading.collectAsState()
-    val error by viewModel. error.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
     
     // State pentru dialogul Add Location
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
     
     // Permission launcher pentru GPS
     val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts. RequestMultiplePermissions()
+        ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] ?: false
         val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] ?: false
@@ -66,9 +66,9 @@ fun LocationScreen(
         
         if (fineLocationGranted || coarseLocationGranted) {
             Log.d(TAG, "✅ Permission granted, loading GPS...")
-            viewModel. loadGPSLocation()
+            viewModel.loadGPSLocation()
         } else {
-            Log. e(TAG, "❌ Permission denied by user")
+            Log.e(TAG, "❌ Permission denied by user")
         }
     }
     
@@ -76,12 +76,12 @@ fun LocationScreen(
     fun requestGPSLocation() {
         Log.d(TAG, "🔵 requestGPSLocation() called")
         
-        val hasFinePermission = ContextCompat. checkSelfPermission(
-            context, Manifest.permission. ACCESS_FINE_LOCATION
-        ) == PackageManager. PERMISSION_GRANTED
+        val hasFinePermission = ContextCompat.checkSelfPermission(
+            context, Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
         
         val hasCoarsePermission = ContextCompat.checkSelfPermission(
-            context, Manifest. permission.ACCESS_COARSE_LOCATION
+            context, Manifest.permission.ACCESS_COARSE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
         
         Log.d(TAG, "Current permissions: fine=$hasFinePermission, coarse=$hasCoarsePermission")
@@ -90,10 +90,10 @@ fun LocationScreen(
             Log.d(TAG, "✅ Already has permission, loading GPS...")
             viewModel.loadGPSLocation()
         } else {
-            Log. d(TAG, "🔵 Requesting permissions from user...")
-            permissionLauncher. launch(
+            Log.d(TAG, "🔵 Requesting permissions from user...")
+            permissionLauncher.launch(
                 arrayOf(
-                    Manifest.permission. ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.ACCESS_COARSE_LOCATION
                 )
             )
@@ -109,7 +109,7 @@ fun LocationScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored. Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -119,9 +119,9 @@ fun LocationScreen(
     ) { paddingValues ->
         Column(
             modifier = Modifier
-                . fillMaxSize()
+                .fillMaxSize()
                 .padding(paddingValues)
-                .padding(16. dp)
+                .padding(16.dp)
         ) {
             // Eroare (dacă există)
             error?.let { errorMessage ->
@@ -130,13 +130,13 @@ fun LocationScreen(
                         .fillMaxWidth()
                         .padding(bottom = 16.dp),
                     colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme. colorScheme.errorContainer
+                        containerColor = MaterialTheme.colorScheme.errorContainer
                     )
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16. dp),
+                            .padding(16.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -153,7 +153,7 @@ fun LocationScreen(
                 }
             }
 
-            // Secțiunea GPS - folosește requestGPSLocation în loc de viewModel. loadGPSLocation
+            // Secțiunea GPS - folosește requestGPSLocation în loc de viewModel.loadGPSLocation
             GPSLocationSection(
                 currentGPSLocation = currentGPSLocation,
                 isLoading = isLoading,
@@ -167,9 +167,9 @@ fun LocationScreen(
 
             // Header cu titlu și buton Add
             Row(
-                modifier = Modifier. fillMaxWidth(),
-                horizontalArrangement = Arrangement. SpaceBetween,
-                verticalAlignment = Alignment. CenterVertically
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "Saved Locations",
@@ -181,7 +181,7 @@ fun LocationScreen(
                     onClick = { showAddDialog = true }
                 ) {
                     Icon(
-                        imageVector = Icons. Filled.Add,
+                        imageVector = Icons.Filled.Add,
                         contentDescription = "Add Location",
                         modifier = Modifier.size(18.dp)
                     )
@@ -196,7 +196,7 @@ fun LocationScreen(
             when {
                 isLoading && locations.isEmpty() -> {
                     Box(
-                        modifier = Modifier. fillMaxSize(),
+                        modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) { CircularProgressIndicator() }
                 }
@@ -210,8 +210,8 @@ fun LocationScreen(
                             Spacer(Modifier.height(8.dp))
                             Text(
                                 text = "Use GPS location or add manually",
-                                style = MaterialTheme. typography.bodySmall,
-                                color = MaterialTheme. colorScheme.onSurfaceVariant
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -221,8 +221,8 @@ fun LocationScreen(
 				
 				else -> {
 					LazyColumn(
-						modifier = Modifier. fillMaxSize(),
-						verticalArrangement = Arrangement. spacedBy(8.dp)
+						modifier = Modifier.fillMaxSize(),
+						verticalArrangement = Arrangement.spacedBy(8.dp)
 					) {
 						items(
 							items = locations,
@@ -231,7 +231,7 @@ fun LocationScreen(
 							LocationItemCompact(
 								location = location,
 								onSelect = { 
-									Log. d(TAG, "Select clicked for: ${location.name}")
+									Log.d(TAG, "Select clicked for: ${location.name}")
 									onLocationSelected(location) 
 								},
 								onDelete = { 
@@ -247,18 +247,18 @@ fun LocationScreen(
 							
 							Button(
 								onClick = {
-									Log. d(TAG, "🔵 Load Defaults clicked")
+									Log.d(TAG, "🔵 Load Defaults clicked")
 									viewModel.loadDefaultLocations()
 								},
 								modifier = Modifier.fillMaxWidth(),
 								colors = ButtonDefaults.buttonColors(
-									containerColor = MaterialTheme.colorScheme. secondary
+									containerColor = MaterialTheme.colorScheme.secondary
 								)
 							) {
 								Text("Load Defaults")
 							}
 							
-							Spacer(modifier = Modifier.height(8. dp))
+							Spacer(modifier = Modifier.height(8.dp))
 						}
 					}
 				}
@@ -283,6 +283,8 @@ fun LocationScreen(
     }
 }
 
+
+
 /**
  * Dialog pentru adăugarea unei locații noi
  */
@@ -296,18 +298,23 @@ private fun AddLocationDialog(
     var longitude by rememberSaveable { mutableStateOf("") }
     var altitude by rememberSaveable { mutableStateOf("0") }
     
+    // ✅ TimeZone - default din telefon (cu DST inclus)
+    val defaultTimeZone = java.util.TimeZone.getDefault().getOffset(System.currentTimeMillis()) / (1000.0 * 60.0 * 60.0)
+    var timeZone by rememberSaveable { mutableStateOf(String.format("%.1f", defaultTimeZone)) }
+    
     // Validare
     val isValid = cityName.isNotBlank() && 
-                  latitude. toDoubleOrNull() != null && 
+                  latitude.toDoubleOrNull() != null && 
                   longitude.toDoubleOrNull() != null &&
-                  altitude. toDoubleOrNull() != null
+                  altitude.toDoubleOrNull() != null &&
+                  timeZone.toDoubleOrNull() != null
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16. dp),
-            shape = MaterialTheme.shapes. large
+                .padding(16.dp),
+            shape = MaterialTheme.shapes.large
         ) {
             Column(
                 modifier = Modifier
@@ -319,7 +326,7 @@ private fun AddLocationDialog(
                 Text(
                     text = "Add New Location",
                     style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight. Bold
+                    fontWeight = FontWeight.Bold
                 )
                 
                 // City Name
@@ -327,7 +334,7 @@ private fun AddLocationDialog(
                     value = cityName,
                     onValueChange = { cityName = it },
                     label = { Text("City Name") },
-                    placeholder = { Text("e.g.  Bucharest") },
+                    placeholder = { Text("e.g. Bucharest") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -337,9 +344,9 @@ private fun AddLocationDialog(
                     value = latitude,
                     onValueChange = { latitude = it },
                     label = { Text("Latitude") },
-                    placeholder = { Text("e.g. 44.4268") },
+                    placeholder = { Text("e.g.44.4268") },
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType. Decimal),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     isError = latitude.isNotEmpty() && latitude.toDoubleOrNull() == null,
                     supportingText = {
                         if (latitude.isNotEmpty() && latitude.toDoubleOrNull() == null) {
@@ -354,51 +361,74 @@ private fun AddLocationDialog(
                     value = longitude,
                     onValueChange = { longitude = it },
                     label = { Text("Longitude") },
-                    placeholder = { Text("e.g. 26.1025") },
+                    placeholder = { Text("e.g.26.1025") },
                     singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType. Decimal),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     isError = longitude.isNotEmpty() && longitude.toDoubleOrNull() == null,
                     supportingText = {
                         if (longitude.isNotEmpty() && longitude.toDoubleOrNull() == null) {
                             Text("Enter a valid number")
                         }
                     },
-                    modifier = Modifier. fillMaxWidth()
-                )
-                
-                // Altitude
-                OutlinedTextField(
-                    value = altitude,
-                    onValueChange = { altitude = it },
-                    label = { Text("Altitude (m)") },
-                    placeholder = { Text("e.g.  85") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType. Number),
-                    isError = altitude. isNotEmpty() && altitude.toDoubleOrNull() == null,
                     modifier = Modifier.fillMaxWidth()
                 )
+                
+                // ✅ Altitude și TimeZone pe același rând
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Altitude
+                    OutlinedTextField(
+                        value = altitude,
+                        onValueChange = { altitude = it },
+                        label = { Text("Alt (m)") },
+                        placeholder = { Text("85") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        isError = altitude.isNotEmpty() && altitude.toDoubleOrNull() == null,
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    // TimeZone
+                    OutlinedTextField(
+                        value = timeZone,
+                        onValueChange = { timeZone = it },
+                        label = { Text("UTC±") },
+                        placeholder = { Text("2.0") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        isError = timeZone.isNotEmpty() && timeZone.toDoubleOrNull() == null,
+                        supportingText = {
+                            if (timeZone.isNotEmpty() && timeZone.toDoubleOrNull() == null) {
+                                Text("Invalid")
+                            }
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
                 // Butoane Cancel / Save
                 Row(
-                    modifier = Modifier. fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment. CenterVertically
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextButton(onClick = onDismiss) {
                         Text("Cancel")
                     }
-                    Spacer(Modifier.width(8. dp))
+                    Spacer(Modifier.width(8.dp))
                     Button(
                         onClick = {
                             val newLocation = LocationData(
                                 id = 0,
-                                name = cityName. trim(),
+                                name = cityName.trim(),
                                 latitude = latitude.toDouble(),
                                 longitude = longitude.toDouble(),
                                 altitude = altitude.toDoubleOrNull() ?: 0.0,
-                                timeZone = java.util.TimeZone.getDefault().rawOffset / (1000.0 * 60.0 * 60.0),
+                                timeZone = timeZone.toDoubleOrNull() ?: 2.0,  // ✅ Folosește valoarea introdusă
                                 isCurrentLocation = false
                             )
                             onSave(newLocation)
@@ -410,7 +440,7 @@ private fun AddLocationDialog(
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )
-                        Spacer(Modifier.width(4. dp))
+                        Spacer(Modifier.width(4.dp))
                         Text("Save")
                     }
                 }
@@ -418,6 +448,13 @@ private fun AddLocationDialog(
         }
     }
 }
+
+
+
+
+
+
+
 
 /**
  * Secțiunea pentru locația GPS
@@ -430,7 +467,7 @@ private fun GPSLocationSection(
     onLoadGPS: () -> Unit
 ) {
     Card(
-        modifier = Modifier. fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
@@ -463,20 +500,20 @@ private fun GPSLocationSection(
             if (currentGPSLocation != null) {
                 Column(Modifier.fillMaxWidth()) {
                     InfoRow(label = "Lat:", value = String.format("%.4f°", currentGPSLocation.latitude))
-                    Spacer(Modifier.height(4. dp))
-                    InfoRow(label = "Lon:", value = String. format("%.4f°", currentGPSLocation.longitude))
-                    Spacer(Modifier. height(4.dp))
-                    InfoRow(label = "Alt:", value = "${currentGPSLocation.altitude. toInt()}m")
+                    Spacer(Modifier.height(4.dp))
+                    InfoRow(label = "Lon:", value = String.format("%.4f°", currentGPSLocation.longitude))
+                    Spacer(Modifier.height(4.dp))
+                    InfoRow(label = "Alt:", value = "${currentGPSLocation.altitude.toInt()}m")
 
                     Spacer(Modifier.height(12.dp))
 
                     Button(
                         onClick = { onUseGPS(currentGPSLocation) },
-                        modifier = Modifier. fillMaxWidth(),
-                        colors = ButtonDefaults. buttonColors(containerColor = MaterialTheme.colorScheme. primary)
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                     ) {
-                        Icon(imageVector = Icons. Filled.Check, contentDescription = null, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(8. dp))
+                        Icon(imageVector = Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(20.dp))
+                        Spacer(Modifier.width(8.dp))
                         Text("Use this location")
                     }
                 }
@@ -489,8 +526,8 @@ private fun GPSLocationSection(
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isLoading
                 ) {
-                    Icon(imageVector = Icons. Filled.LocationOn, contentDescription = null, modifier = Modifier. size(20.dp))
-                    Spacer(Modifier.width(8. dp))
+                    Icon(imageVector = Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Spacer(Modifier.width(8.dp))
                     Text("Get GPS Location")
                 }
 
@@ -498,8 +535,8 @@ private fun GPSLocationSection(
 
                 Text(
                     text = "Tap to get current GPS coordinates",
-                    style = MaterialTheme. typography.bodySmall,
-                    color = MaterialTheme.colorScheme. onPrimaryContainer. copy(alpha = 0.7f)
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
                 )
             }
         }
@@ -516,7 +553,7 @@ private fun GPSLocationSection(
 			onSelect: () -> Unit,
 			onDelete: () -> Unit
 		) {
-			var expanded by rememberSaveable(location. id) { mutableStateOf(false) }
+			var expanded by rememberSaveable(location.id) { mutableStateOf(false) }
 			
 			// ✅ București nu poate fi șters
 			val canDelete = location.name != "București"
@@ -525,13 +562,13 @@ private fun GPSLocationSection(
 
 			Card(
 				modifier = Modifier
-					. fillMaxWidth()
+					.fillMaxWidth()
 					.animateContentSize(),
-				colors = CardDefaults. cardColors(
+				colors = CardDefaults.cardColors(
 					containerColor = MaterialTheme.colorScheme.surfaceVariant
 				)
 			) {
-				Column(Modifier. fillMaxWidth()) {
+				Column(Modifier.fillMaxWidth()) {
 					// Bara compactă
 					Row(
 						modifier = Modifier
@@ -544,12 +581,12 @@ private fun GPSLocationSection(
 						Text(
 							text = location.name,
 							style = MaterialTheme.typography.titleMedium,
-							color = MaterialTheme. colorScheme.onSurfaceVariant,
+							color = MaterialTheme.colorScheme.onSurfaceVariant,
 							modifier = Modifier
 								.weight(1f)
 								.padding(end = 8.dp)
 								.clickable { 
-									Log.d(TAG, "City name clicked: ${location. name}")
+									Log.d(TAG, "City name clicked: ${location.name}")
 									expanded = !expanded 
 								}
 						)
@@ -569,14 +606,14 @@ private fun GPSLocationSection(
 						if (canDelete) {
 							IconButton(
 								onClick = {
-									Log. d(TAG, "DELETE BUTTON CLICKED for:  ${location.name}")
+									Log.d(TAG, "DELETE BUTTON CLICKED for:  ${location.name}")
 									onDelete()
 								},
 								colors = IconButtonDefaults.iconButtonColors(
-									contentColor = MaterialTheme.colorScheme. error
+									contentColor = MaterialTheme.colorScheme.error
 								)
 							) {
-								Icon(imageVector = Icons. Filled.Delete, contentDescription = "Delete location")
+								Icon(imageVector = Icons.Filled.Delete, contentDescription = "Delete location")
 							}
 						} else {
 							// ✅ Placeholder pentru a păstra alinierea (sau poți să nu pui nimic)
@@ -586,11 +623,11 @@ private fun GPSLocationSection(
 						// Select Button
 						TextButton(
 							onClick = {
-								Log. d(TAG, "SELECT BUTTON CLICKED for: ${location. name}")
+								Log.d(TAG, "SELECT BUTTON CLICKED for: ${location.name}")
 								onSelect()
 							},
 							colors = ButtonDefaults.textButtonColors(
-								contentColor = MaterialTheme.colorScheme. primary
+								contentColor = MaterialTheme.colorScheme.primary
 							)
 						) {
 							Text("Select")
@@ -602,12 +639,12 @@ private fun GPSLocationSection(
 						Column(
 							modifier = Modifier
 								.fillMaxWidth()
-								. padding(horizontal = 16.dp, vertical = 8.dp)
+								.padding(horizontal = 16.dp, vertical = 8.dp)
 						) {
 							InfoRow(label = "Lat:", value = String.format("%.4f°", location.latitude))
 							Spacer(Modifier.height(4.dp))
 							InfoRow(label = "Lon:", value = String.format("%.4f°", location.longitude))
-							Spacer(Modifier. height(4.dp))
+							Spacer(Modifier.height(4.dp))
 							InfoRow(label = "Alt:", value = location.getFormattedAltitude())
 							Spacer(Modifier.height(8.dp))
 						}
@@ -630,8 +667,8 @@ private fun InfoRow(
     value: String
 ) {
     Row(
-        modifier = Modifier. fillMaxWidth(),
-        horizontalArrangement = Arrangement. SpaceBetween
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
             text = label,
@@ -640,9 +677,9 @@ private fun InfoRow(
         )
         Text(
             text = value,
-            style = MaterialTheme.typography. bodyMedium,
-            color = MaterialTheme.colorScheme. onSurfaceVariant,
-            fontWeight = FontWeight. Bold
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Bold
         )
     }
 }

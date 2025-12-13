@@ -20,13 +20,13 @@ import androidx.compose.foundation.border
 
 
 /**
- * Card combinat pentru Tattva ?i SubTattva (design compact)
+ * Card combinat pentru Tattva si SubTattva (design compact)
  */
 @Composable
 fun CombinedTattvaCard(
     tattva: TattvaInfo,
     subTattva: TattvaInfo,
-	onAllDayClick: () -> Unit,
+    onAllDayClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     // Timp curent pentru countdown
@@ -87,15 +87,16 @@ fun CombinedTattvaCard(
                     Text(
                         text = tattva.name.uppercase(),
                         style = MaterialTheme.typography.headlineSmall,
-                        fontSize = 64.sp,			// <-- AICI modifici marimea!
+                        fontSize = 64.sp,
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 2.sp
                     )
                     
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(1.dp)) //Spatiu sub tattva
                     
-                    // ? Intervalul de timp: Start si Stop PE ACELASI RÂND
+                    /*
+                    // ? COMENTAT: Intervalul de timp Begin/End pentru Tattva
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -116,36 +117,6 @@ fun CombinedTattvaCard(
                             )
                         }
                         
-                        // âœ… Buton ALL DAY - mai mare + contur gri
-						Button(
-							onClick = onAllDayClick,
-							colors = ButtonDefaults.buttonColors(
-								containerColor = Color.White.copy(alpha = 0.3f),
-								contentColor = Color.White
-							),
-							shape = RoundedCornerShape(14.dp),
-							modifier = Modifier
-								.padding(horizontal = 4.dp)
-								.border(
-									width = 2.dp,
-									color = Color.Gray.copy(alpha = 0.6f),
-									shape = RoundedCornerShape(14.dp)
-								),
-							contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)  // âœ… Mai mare
-						) {
-							Text(
-								text = "ALL DAY",
-								style = MaterialTheme.typography.labelLarge,
-								fontSize = 18.sp,  // âœ… Text mai mare
-								fontWeight = FontWeight.Bold,
-								letterSpacing = 1.5.sp,
-								color = Color.White  // Text alb
-							)
-						}
-                        
-						
-						
-						
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
                                 text = formatTime(tattva.endTime),
@@ -164,21 +135,46 @@ fun CombinedTattvaCard(
                     }
                     
                     Spacer(modifier = Modifier.height(26.dp))
+                    */
                     
                     // Timpul ramas
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                       
-                        
-                        Spacer(modifier = Modifier.height(4.dp))
-                        
                         Text(
                             text = String.format("%02d:%02d", tattvaMinutes, tattvaSeconds),
                             style = MaterialTheme.typography.headlineLarge,
                             fontSize = 48.sp,
                             color = Color.White,
                             fontWeight = FontWeight.Bold
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.height(56.dp)) //Spatiu sub cronometru timp ramas tattva
+                    
+                    // ? Buton ALL DAY - centrat
+                    Button(
+                        onClick = onAllDayClick,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White.copy(alpha = 0.3f),
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier
+                            .border(
+                                width = 2.dp,
+                                color = Color.Gray.copy(alpha = 0.6f),
+                                shape = RoundedCornerShape(14.dp)
+                            ),
+                        contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp)
+                    ) {
+                        Text(
+                            text = "ALL DAY",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.5.sp,
+                            color = Color.White
                         )
                     }
                 }
@@ -250,9 +246,10 @@ fun CombinedTattvaCard(
                         }
                     }
                     
+                    /*
+                    // ? COMENTAT: Begin/End pentru SubTattva
                     Spacer(modifier = Modifier.height(8.dp))
                     
-                    // ? Start si Stop PE ACELASI RÂND cu HH:MM:SS
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -264,7 +261,7 @@ fun CombinedTattvaCard(
                             style = MaterialTheme.typography.bodyMedium,
                             fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-							fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold
                         )
                         
                         // Stop
@@ -273,9 +270,10 @@ fun CombinedTattvaCard(
                             style = MaterialTheme.typography.bodyMedium,
                             fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-							fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold
                         )
                     }
+                    */
                 }
             }
         }
@@ -283,7 +281,7 @@ fun CombinedTattvaCard(
 }
 
 /**
- * ? Formateaza timpul în HH:mm:ss (cu secunde)
+ * Formateaza timpul ï¿½n HH:mm:ss (cu secunde)
  */
 private fun formatTime(calendar: Calendar): String {
     return String.format(

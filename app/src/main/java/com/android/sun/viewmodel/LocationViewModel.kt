@@ -1,12 +1,13 @@
-package com.android.sun.viewmodel
+package com. android.sun.viewmodel
 
 import android.app.Application
-import androidx.lifecycle. AndroidViewModel
-import androidx. lifecycle.viewModelScope
-import com.android.sun. data.model.LocationData
-import com.android.sun.data. repository.LocationRepository
+import androidx.  lifecycle.AndroidViewModel
+import androidx.  lifecycle.viewModelScope
+import com.android.sun. data.model.  LocationData
+import com.android.sun. data.repository.  LocationPreferences
+import com.android.sun.  data.repository.LocationRepository
 import kotlinx.coroutines. flow.*
-import kotlinx. coroutines.launch
+import kotlinx.  coroutines.launch
 
 /**
  * ViewModel pentru gestionarea locațiilor
@@ -14,39 +15,32 @@ import kotlinx. coroutines.launch
 class LocationViewModel(application: Application) : AndroidViewModel(application) {
 
     private val locationRepository = LocationRepository(application)
+    private val locationPreferences = LocationPreferences(application)  // ✅ Adăugat
 
     // State pentru lista de locații
     val locations: StateFlow<List<LocationData>> = locationRepository
         .getAllLocations()
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted. WhileSubscribed(5000),
+            started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
 
     // State pentru locația curentă GPS
     private val _currentGPSLocation = MutableStateFlow<LocationData?>(null)
-    val currentGPSLocation: StateFlow<LocationData?> = _currentGPSLocation. asStateFlow()
+    val currentGPSLocation: StateFlow<LocationData?> = _currentGPSLocation.  asStateFlow()
 
     // State pentru loading
     private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    val isLoading:  StateFlow<Boolean> = _isLoading.asStateFlow()
 
     // State pentru erori
-    private val _error = MutableStateFlow<String? >(null)
+    private val _error = MutableStateFlow<String?  >(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
     init {
-		
-		// ✅ Asigură-te că București există mereu
-		viewModelScope.launch {
-			try {
-				locationRepository.ensureBucharestExists()
-			} catch (e: Exception) {
-				android.util.Log. e("LocationViewModel", "Error ensuring București exists: ${e. message}")
-			}
-		}
-	
+
+        
         loadGPSLocation()
     }
 
@@ -56,7 +50,7 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
     fun loadGPSLocation() {
         android.util.Log. d("LocationViewModel", "🔵 loadGPSLocation() CALLED")
         
-        viewModelScope. launch {
+        viewModelScope.  launch {
             _isLoading.value = true
             _error.value = null
             
@@ -64,16 +58,16 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
             
             try {
                 val location = locationRepository.getCurrentLocation()
-                android.util.Log. d("LocationViewModel", "🔵 GPS result: $location")
+                android.util.Log.  d("LocationViewModel", "🔵 GPS result: $location")
                 
                 if (location != null) {
                     _currentGPSLocation.value = location
-                    android.util.Log.d("LocationViewModel", "✅ GPS Location set: ${location.latitude}, ${location.longitude}")
+                    android.util.Log.d("LocationViewModel", "✅ GPS Location set:  ${location.latitude}, ${location.longitude}")
                 } else {
-                    _error.value = "Could not get GPS location.  Check permissions."
+                    _error.value = "Could not get GPS location.   Check permissions."
                     android. util.Log.e("LocationViewModel", "❌ GPS returned null")
                 }
-            } catch (e: Exception) {
+            } catch (e:  Exception) {
                 _error.value = "GPS Error: ${e.message}"
                 android. util.Log.e("LocationViewModel", "❌ GPS Exception: ${e.message}")
                 e.printStackTrace()
@@ -90,31 +84,12 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
     fun saveLocation(location: LocationData) {
         viewModelScope.launch {
             _isLoading.value = true
-            _error. value = null
+            _error.  value = null
             
             try {
                 locationRepository.saveLocation(location)
-            } catch (e: Exception) {
+            } catch (e:  Exception) {
                 _error.value = "Error saving location: ${e.message}"
-                e.printStackTrace()
-            } finally {
-                _isLoading. value = false
-            }
-        }
-    }
-
-    /**
-     * Șterge o locație
-     */
-    fun deleteLocation(location: LocationData) {
-        viewModelScope.launch {
-            _isLoading. value = true
-            _error.value = null
-            
-            try {
-                locationRepository.deleteLocation(location)
-            } catch (e: Exception) {
-                _error.value = "Error deleting location: ${e.message}"
                 e.printStackTrace()
             } finally {
                 _isLoading.value = false
@@ -123,18 +98,60 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
     }
 
     /**
+     * ✅ Șterge o locație
+     * Dacă locația ștearsă este cea curent selectată, resetează la București
+     */
+    fun deleteLocation(location: LocationData) {
+        viewModelScope.launch {
+            _isLoading. value = true
+            _error.  value = null
+            
+            try {
+                // ✅ Verifică dacă locația ștearsă este cea curent selectată
+                val currentSavedName = locationPreferences.getSavedLocationName()
+                val isCurrentLocation = currentSavedName == location.name
+                
+                // Șterge locația din DB
+                locationRepository.deleteLocation(location)
+                
+                // ✅ Dacă am șters locația curentă, resetează la București
+                if (isCurrentLocation) {
+                    android.util.Log.  d("LocationViewModel", "⚠️ Deleted current location '${location.name}', resetting to București")
+                    
+                    // Salvează București ca locație curentă
+                    locationPreferences.saveSelectedLocation(
+                        id = 0,
+                        name = "București",
+                        latitude = 44.4268,
+                        longitude = 26.1025,
+                        altitude = 80.0,
+                        timeZone = 2.0,
+                        isGPS = false
+                    )
+                }
+                
+            } catch (e: Exception) {
+                _error.value = "Error deleting location:  ${e.message}"
+                e.printStackTrace()
+            } finally {
+                _isLoading.  value = false
+            }
+        }
+    }
+
+    /**
      * Actualizează o locație
      */
-    fun updateLocation(location: LocationData) {
+    fun updateLocation(location:  LocationData) {
         viewModelScope. launch {
             _isLoading.value = true
-            _error.value = null
+            _error. value = null
             
             try {
                 locationRepository.updateLocation(location)
             } catch (e: Exception) {
                 _error.value = "Error updating location: ${e.message}"
-                e.printStackTrace()
+                e. printStackTrace()
             } finally {
                 _isLoading.value = false
             }
@@ -145,18 +162,18 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
      * ✅ Încarcă locațiile predefinite (toate orașele din România)
      */
     fun loadDefaultLocations() {
-        android.util. Log.d("LocationViewModel", "🔵 loadDefaultLocations() CALLED")
+        android.util.Log. d("LocationViewModel", "🔵 loadDefaultLocations() CALLED")
         
         viewModelScope.launch {
-            _isLoading.value = true
-            _error. value = null
+            _isLoading. value = true
+            _error.  value = null
             
             try {
                 locationRepository.loadDefaultLocations()
-                android.util.Log. d("LocationViewModel", "✅ Default locations loaded")
+                android.util.Log.  d("LocationViewModel", "✅ Default locations loaded")
             } catch (e: Exception) {
-                _error.value = "Error loading defaults: ${e.message}"
-                android.util.Log. e("LocationViewModel", "❌ Error: ${e.message}")
+                _error. value = "Error loading defaults: ${e.message}"
+                android.util.Log. e("LocationViewModel", "❌ Error:  ${e.message}")
                 e.printStackTrace()
             } finally {
                 _isLoading.value = false
@@ -179,6 +196,6 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
      * Curăță eroarea
      */
     fun clearError() {
-        _error.value = null
+        _error. value = null
     }
 }

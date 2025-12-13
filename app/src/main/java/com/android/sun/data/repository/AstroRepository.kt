@@ -24,6 +24,7 @@ class AstroRepository(private val context: Context) {
     private val subTattvaCalculator = SubTattvaCalculator()
     private val planetCalculator = PlanetCalculator()
     private val nityaCalculator = NityaCalculator()
+    private val polarityCalculator = PolarityCalculator()  // ✅ ADĂUGAT
 
     /**
      * Calculează toate datele astro pentru locația și timpul curent
@@ -31,9 +32,9 @@ class AstroRepository(private val context: Context) {
     suspend fun calculateAstroData(
         latitude: Double,
         longitude: Double,
-        timeZone: Double,
+        timeZone:  Double,
         locationName: String,
-		isGPSLocation: Boolean = false
+        isGPSLocation: Boolean = false
     ): AstroData = withContext(Dispatchers.Default) {
         val currentTime = Calendar.getInstance()
         calculateAstroDataForTime(currentTime, latitude, longitude, timeZone, locationName, isGPSLocation)
@@ -45,7 +46,7 @@ class AstroRepository(private val context: Context) {
     fun getRealtimeAstroData(
         latitude: Double,
         longitude: Double,
-        timeZone: Double,
+        timeZone:  Double,
         locationName: String
     ): Flow<AstroData> = flow {
         while (true) {
@@ -96,6 +97,7 @@ class AstroRepository(private val context: Context) {
     /**
      * ✅ Calculează datele astro pentru un moment specific
      * ✅ OPTIMIZAT: calculează previousSunset și nextSunrise pentru Planetary Hours
+     * ✅ ADĂUGAT: calculează polaritatea la răsărit și apus
      */
     private fun calculateAstroDataForTime(
         calendar: Calendar,
@@ -103,7 +105,7 @@ class AstroRepository(private val context: Context) {
         longitude: Double,
         timeZone: Double,
         locationName: String,
-		isGPSLocation: Boolean = false
+        isGPSLocation: Boolean = false
     ): AstroData {
         val year = calendar.get(Calendar.YEAR)
         val month = calendar.get(Calendar.MONTH) + 1
@@ -117,39 +119,28 @@ class AstroRepository(private val context: Context) {
         val sunriseYear = sunrise.get(Calendar.YEAR)
         val sunriseMonth = sunrise.get(Calendar.MONTH) + 1
         val sunriseDay = sunrise.get(Calendar.DAY_OF_MONTH)
-        
-        
-		
-		
-		
-		
-		val sunset = astroCalculator.calculateSunset(
-			sunriseYear, sunriseMonth, sunriseDay,
-			longitude, latitude, timeZone
-		)
 
-		// ✅ CORECT: Calculează previousSunset bazat pe SUNRISE (Tattva Day start!)
-		val yesterdayDate = sunrise.clone() as Calendar  // ✅ Folosește sunrise, nu calendar!
-		yesterdayDate.add(Calendar.DAY_OF_MONTH, -1)
-		val yesterdayYear = yesterdayDate.get(Calendar.YEAR)
-		val yesterdayMonth = yesterdayDate.get(Calendar.MONTH) + 1
-		val yesterdayDay = yesterdayDate.get(Calendar.DAY_OF_MONTH)
+        val sunset = astroCalculator.calculateSunset(
+            sunriseYear, sunriseMonth, sunriseDay,
+            longitude, latitude, timeZone
+        )
 
-		val previousSunset = astroCalculator.calculateSunset(
-			yesterdayYear, yesterdayMonth, yesterdayDay,
-			longitude, latitude, timeZone
-		)
+        // ✅ CORECT: Calculează previousSunset bazat pe SUNRISE (Tattva Day start!)
+        val yesterdayDate = sunrise.clone() as Calendar
+        yesterdayDate.add(Calendar.DAY_OF_MONTH, -1)
+        val yesterdayYear = yesterdayDate.get(Calendar.YEAR)
+        val yesterdayMonth = yesterdayDate.get(Calendar.MONTH) + 1
+        val yesterdayDay = yesterdayDate.get(Calendar.DAY_OF_MONTH)
 
-		// ✅ CORECT: Calculează nextSunrise bazat pe SUNRISE (Tattva Day start!)
-		val tomorrowDate = sunrise.clone() as Calendar  // ✅ Folosește sunrise, nu calendar!
-		tomorrowDate.add(Calendar.DAY_OF_MONTH, 1)
-		
-		
-		
-		
-		
-		
-		
+        val previousSunset = astroCalculator.calculateSunset(
+            yesterdayYear, yesterdayMonth, yesterdayDay,
+            longitude, latitude, timeZone
+        )
+
+        // ✅ CORECT: Calculează nextSunrise bazat pe SUNRISE (Tattva Day start!)
+        val tomorrowDate = sunrise.clone() as Calendar
+        tomorrowDate.add(Calendar.DAY_OF_MONTH, 1)
+
         val tomorrowYear = tomorrowDate.get(Calendar.YEAR)
         val tomorrowMonth = tomorrowDate.get(Calendar.MONTH) + 1
         val tomorrowDay = tomorrowDate.get(Calendar.DAY_OF_MONTH)
@@ -180,10 +171,60 @@ class AstroRepository(private val context: Context) {
         )
         
         val nitya = nityaCalculator.calculateNitya(
-			moonLongitude, sunLongitude, calendar
-		)
+            moonLongitude, sunLongitude, calendar
+        )
 
-        val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+        
+		
+		
+        // ✅ ADĂUGAT:  Calculează polaritatea la răsărit
+        val sunriseHour = sunrise.get(Calendar.HOUR_OF_DAY)
+        val sunriseMinute = sunrise. get(Calendar. MINUTE)
+        val sunriseSecond = sunrise.get(Calendar.SECOND)
+        
+        val moonLongitudeAtSunrise = astroCalculator.calculateMoonLongitude(
+            sunriseYear, sunriseMonth, sunriseDay, sunriseHour, sunriseMinute, sunriseSecond
+        )
+        val sunLongitudeAtSunrise = astroCalculator.calculateSunLongitude(
+            sunriseYear, sunriseMonth, sunriseDay, sunriseHour, sunriseMinute, sunriseSecond
+        )
+        
+        // ✅ FIX: Apelează cu 2 parametri Double, nu Calendar
+        val sunrisePolarity = polarityCalculator.calculateSunrisePolarity(
+            moonLongitudeAtSunrise, sunLongitudeAtSunrise
+        )
+
+        // ✅ ADĂUGAT: Calculează polaritatea la apus
+        val sunsetYear = sunset.get(Calendar.YEAR)
+        val sunsetMonth = sunset.get(Calendar.MONTH) + 1
+        val sunsetDay = sunset.get(Calendar.DAY_OF_MONTH)
+        val sunsetHour = sunset.get(Calendar.HOUR_OF_DAY)
+        val sunsetMinute = sunset.get(Calendar. MINUTE)
+        val sunsetSecond = sunset.get(Calendar.SECOND)
+        
+        val moonLongitudeAtSunset = astroCalculator. calculateMoonLongitude(
+            sunsetYear, sunsetMonth, sunsetDay, sunsetHour, sunsetMinute, sunsetSecond
+        )
+        val sunLongitudeAtSunset = astroCalculator.calculateSunLongitude(
+            sunsetYear, sunsetMonth, sunsetDay, sunsetHour, sunsetMinute, sunsetSecond
+        )
+        
+        // ✅ FIX: Apelează cu 2 parametri Double, nu Calendar
+        val sunsetPolarity = polarityCalculator.calculateSunsetPolarity(
+            moonLongitudeAtSunset, sunLongitudeAtSunset
+        )
+
+
+
+
+
+
+
+
+
+
+
+        val timeFormat = SimpleDateFormat("HH:mm: ss", Locale.getDefault())
         val sunriseFormatted = timeFormat.format(sunrise.time)
         val sunsetFormatted = timeFormat.format(sunset.time)
 
@@ -206,23 +247,28 @@ class AstroRepository(private val context: Context) {
             sunSign = sunSign,
             moonSign = moonSign,
             locationName = locationName,
-			isGPSLocation = isGPSLocation,
+            isGPSLocation = isGPSLocation,
             latitude = latitude,
             longitude = longitude,
-            timeZone = timeZone
+            timeZone = timeZone,
+            // ✅ ADĂUGAT:  Polaritate
+            sunrisePolarity = sunrisePolarity,
+            sunsetPolarity = sunsetPolarity,
+            sunrisePolaritySymbol = polarityCalculator.getPolaritySymbol(sunrisePolarity),
+            sunsetPolaritySymbol = polarityCalculator.getPolaritySymbol(sunsetPolarity)
         )
     }
 
     /**
-     * ✅ HIBRID OPTIMIZAT: Folosește TattvaCalculator DOAR pentru prima SubTattva, 
+     * ✅ HIBRID OPTIMIZAT:  Folosește TattvaCalculator DOAR pentru prima SubTattva, 
      * apoi calculează restul direct (reduce 300 apeluri → 60 apeluri = de 5 ori mai rapid!)
-     * Garantează precizie perfectă cu MainScreen!
+     * Garantează precizie perfectă cu MainScreen! 
      */
     fun generateTattvaDaySchedule(
         sunriseTime: Calendar,
         latitude: Double,
         longitude: Double,
-        timeZone: Double,
+        timeZone:  Double,
         currentTime: Calendar = Calendar.getInstance()
     ): List<TattvaDayItem> {
         val tattvaList = mutableListOf<TattvaDayItem>()
@@ -240,12 +286,12 @@ class AstroRepository(private val context: Context) {
             longitude, latitude, timeZone
         )
         
-        val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+        val timeFormat = SimpleDateFormat("HH:mm: ss", Locale.getDefault())
         
         android.util.Log.d("TattvaDebug", "============================================")
-        android.util.Log.d("TattvaDebug", "🚀 HYBRID OPTIMIZED (1 calc per Tattva!)")
+        android.util.Log.d("TattvaDebug", "🚀 HYBRID OPTIMIZED (1 calc per Tattva! )")
         android.util.Log.d("TattvaDebug", "============================================")
-        android.util.Log.d("TattvaDebug", "🌅 Sunrise: ${timeFormat.format(sunriseTime.time)}")
+        android.util.Log.d("TattvaDebug", "🌅 Sunrise:  ${timeFormat.format(sunriseTime.time)}")
         android.util.Log.d("TattvaDebug", "🌅 Next Sunrise: ${timeFormat.format(nextSunrise.time)}")
         
         val startTime = System.currentTimeMillis()
