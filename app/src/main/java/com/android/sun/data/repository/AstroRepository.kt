@@ -224,7 +224,7 @@ class AstroRepository(private val context: Context) {
 
 
 
-        val timeFormat = SimpleDateFormat("HH:mm: ss", Locale.getDefault())
+        val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
         val sunriseFormatted = timeFormat.format(sunrise.time)
         val sunsetFormatted = timeFormat.format(sunset.time)
 

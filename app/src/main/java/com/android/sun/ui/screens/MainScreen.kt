@@ -1,28 +1,28 @@
-package com. android.sun.ui.screens
+package com.android.sun.ui.screens
 
-import com.android.sun. data.model.toTattvaInfo
-import androidx.compose.foundation. background
+import com.android.sun.data.model.toTattvaInfo
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx. compose.foundation.layout.*
-import androidx. compose.foundation.lazy.LazyColumn
-import androidx.compose. foundation.shape.RoundedCornerShape
-import androidx.compose.material. icons.Icons
-import androidx.compose.material.icons.filled. Refresh
-import androidx.compose.material. icons.filled.LocationOn
-import androidx. compose.material. icons.filled.Settings
-import androidx.compose. material3.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx. compose.ui. Alignment
-import androidx. compose.ui. Modifier
-import androidx. compose.ui.graphics. Brush
-import androidx.compose.ui.graphics. Color
-import androidx. compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit. dp
-import androidx. compose.ui.unit.sp
-import com.android.sun. data.model.AstroData
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.android.sun.data.model.AstroData
 import com.android.sun.ui.components.CombinedTattvaCard
-import com.android.sun.ui. components.PlanetaryHoursCard
-import com. android.sun.ui.components.NityaExpandableCard
+import com.android.sun.ui.components.PlanetaryHoursCard
+import com.android.sun.ui.components.NityaExpandableCard
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
@@ -78,7 +78,7 @@ fun MainScreen(
                 // Card combinat Tattva + SubTattva
                 item(key = "combined_tattva") {
                     CombinedTattvaCard(
-                        tattva = astroData. tattva. toTattvaInfo(),
+                        tattva = astroData.tattva.toTattvaInfo(),
                         subTattva = astroData.subTattva.toTattvaInfo(),
                         onAllDayClick = onNavigateToAllDay
                     )
@@ -93,7 +93,7 @@ fun MainScreen(
                         sunrise = astroData.sunrise,
                         sunset = astroData.sunset,
                         nextSunrise = nextSunrise,
-                        currentPlanetIndex = astroData. planet.hourNumber - 1
+                        currentPlanetIndex = astroData.planet.hourNumber - 1
                     )
                 }
 
@@ -115,7 +115,7 @@ fun MainScreen(
             ) {
                 Text(
                     text = "Loading, please wait...",
-                    style = MaterialTheme.typography. headlineSmall
+                    style = MaterialTheme.typography.headlineSmall
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(onClick = onRefresh) {
@@ -137,7 +137,7 @@ private fun CompactInfoCard(
     onRefresh:  () -> Unit,
     onSettings: () -> Unit
 ) {
-    var currentTime by remember { mutableStateOf(Calendar. getInstance()) }
+    var currentTime by remember { mutableStateOf(Calendar.getInstance()) }
 
     LaunchedEffect(Unit) {
         while (true) {
@@ -150,9 +150,9 @@ private fun CompactInfoCard(
 
     Card(
         modifier = Modifier
-            . fillMaxWidth()
+            .fillMaxWidth()
             .clickable {
-                android.util.Log. d("CompactInfoCard", "Card clicked - navigating to location")
+                android.util.Log.d("CompactInfoCard", "Card clicked - navigating to location")
                 onNavigateToLocation()
             },
         shape = RoundedCornerShape(20.dp),
@@ -164,7 +164,7 @@ private fun CompactInfoCard(
                 .background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            tattvaColor. copy(alpha = 0.7f),
+                            tattvaColor.copy(alpha = 0.7f),
                             tattvaColor.copy(alpha = 0.5f)
                         )
                     )
@@ -173,9 +173,9 @@ private fun CompactInfoCard(
         ) {
             // Primul rând:  Data/Ora + Settings/Refresh
             Row(
-                modifier = Modifier. fillMaxWidth(),
-                horizontalArrangement = Arrangement. SpaceBetween,
-                verticalAlignment = Alignment. CenterVertically
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -186,16 +186,16 @@ private fun CompactInfoCard(
                         text = dateFormat.format(currentTime.time).uppercase(),
                         style = MaterialTheme.typography.titleMedium,
                         fontSize = 18.sp,
-                        fontWeight = FontWeight. Bold,
-                        color = Color. White
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
 
                     val timeFormat = SimpleDateFormat("HH: mm:ss", Locale.getDefault())
                     Text(
                         text = timeFormat.format(currentTime.time),
-                        style = MaterialTheme. typography.titleMedium,
+                        style = MaterialTheme.typography.titleMedium,
                         fontSize = 18.sp,
-                        fontWeight = FontWeight. Bold,
+                        fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                 }
@@ -208,7 +208,7 @@ private fun CompactInfoCard(
                     // Settings Button
                     IconButton(
                         onClick = {
-                            android. util.Log. d("CompactInfoCard", "Settings clicked")
+                            android.util.Log.d("CompactInfoCard", "Settings clicked")
                             onSettings()
                         },
                         modifier = Modifier.size(40.dp)
@@ -223,10 +223,10 @@ private fun CompactInfoCard(
                     // Refresh Button
                     IconButton(
                         onClick = {
-                            android. util.Log. d("CompactInfoCard", "Refresh clicked")
+                            android.util.Log.d("CompactInfoCard", "Refresh clicked")
                             onRefresh()
                         },
-                        modifier = Modifier. size(40.dp)
+                        modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
@@ -238,7 +238,7 @@ private fun CompactInfoCard(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            HorizontalDivider(color = Color.White. copy(alpha = 0.3f), thickness = 1.dp)
+            HorizontalDivider(color = Color.White.copy(alpha = 0.3f), thickness = 1.dp)
             Spacer(modifier = Modifier.height(12.dp))
 
             // Al doilea rând: Locație + icon
@@ -251,10 +251,10 @@ private fun CompactInfoCard(
                 Text(
                     text = when {
                         astroData.isGPSLocation -> "GPS"
-                        astroData.locationName. isNotEmpty() -> astroData.locationName
+                        astroData.locationName.isNotEmpty() -> astroData.locationName
                         else -> "No location"
                     },
-                    style = MaterialTheme.typography. titleMedium,
+                    style = MaterialTheme.typography.titleMedium,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
@@ -264,12 +264,12 @@ private fun CompactInfoCard(
                 Icon(
                     imageVector = Icons.Default.LocationOn,
                     contentDescription = "Change location",
-                    tint = Color. White,
-                    modifier = Modifier. size(32.dp)
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
                 )
             }
 
-            Spacer(modifier = Modifier. height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // ✅ Al treilea rând: Sunrise/Sunset CU POLARITATE
             Row(
@@ -280,9 +280,9 @@ private fun CompactInfoCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = astroData.sunrisePolaritySymbol,
-                        style = MaterialTheme.typography. bodyMedium,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight. Bold,
+                        fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Spacer(modifier = Modifier.width(4.dp))
@@ -294,11 +294,11 @@ private fun CompactInfoCard(
                         color = Color.White
                     )
                     Text(
-                        text = astroData. sunriseFormatted,
+                        text = astroData.sunriseFormatted,
                         style = MaterialTheme.typography.bodyMedium,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White. copy(alpha = 0.9f)
+                        color = Color.White.copy(alpha = 0.9f)
                     )
                 }
 
@@ -306,25 +306,25 @@ private fun CompactInfoCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = astroData.sunsetPolaritySymbol,
-                        style = MaterialTheme.typography. bodyMedium,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
-                    Spacer(modifier = Modifier. width(4.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "↓",
                         style = MaterialTheme.typography.bodyMedium,
                         fontSize = 22.sp,
-                        fontWeight = FontWeight. Bold,
+                        fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Text(
                         text = astroData.sunsetFormatted,
-                        style = MaterialTheme.typography. bodyMedium,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White. copy(alpha = 0.9f)
+                        color = Color.White.copy(alpha = 0.9f)
                     )
                 }
             }
