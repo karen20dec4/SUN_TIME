@@ -7,8 +7,13 @@ import kotlin.math.abs
  * ✅ Calculator OPTIMIZAT pentru fazele lunii
  * - Folosește pași mari (1 zi) apoi rafinează cu ore/minute
  * - Reduce de 10x numărul de apeluri SwissEph
+ * - ✅ FIX: Convertește la UTC pentru calcul, apoi afișează în EET
  */
 class MoonPhaseCalculator(private val astroCalculator: AstroCalculator) {
+
+    // ✅ Timezone București (EET/EEST)
+    private val bucharestTimeZone = TimeZone.getTimeZone("Europe/Bucharest")
+    private val utcTimeZone = TimeZone.getTimeZone("UTC")
 
     /**
      * Calculează informațiile despre fazele lunii
@@ -25,18 +30,18 @@ class MoonPhaseCalculator(private val astroCalculator: AstroCalculator) {
         
         val illuminationPercent = calculateIllumination(diff)
         
-        // ✅ Calculează următoarele evenimente
+        // ✅ Calculează următoarele evenimente (returnează în timezone București)
         val nextTripuraSundari = findNextPhase(currentTime, 154.2833)
         val nextFullMoon = findNextPhase(currentTime, 180.0)
         val nextNewMoon = findNextPhase(currentTime, 0.0)
         
         android.util.Log.d("MoonPhaseCalculator", "=== MOON PHASE DEBUG ===")
-        android.util.Log.d("MoonPhaseCalculator", "Moon:    $moonLongitude°, Sun:  $sunLongitude°")
-        android.util.Log. d("MoonPhaseCalculator", "Phase angle: $diff°")
-        android.util.Log.d("MoonPhaseCalculator", "Illumination: $illuminationPercent%")
-        android.util. Log.d("MoonPhaseCalculator", "Next Tripura Sundari: ${formatDate(nextTripuraSundari)}")
-        android.util. Log.d("MoonPhaseCalculator", "Next Full Moon:  ${formatDate(nextFullMoon)}")
-        android.util. Log.d("MoonPhaseCalculator", "Next New Moon:  ${formatDate(nextNewMoon)}")
+        android.util.Log.d("MoonPhaseCalculator", "Moon:      $moonLongitude°, Sun:  $sunLongitude°")
+        android.util.Log.d("MoonPhaseCalculator", "Phase angle: $diff°")
+        android.util.Log.d("MoonPhaseCalculator", "Illumination:  $illuminationPercent%")
+        android.util.Log.d("MoonPhaseCalculator", "Next Tripura Sundari: ${formatDate(nextTripuraSundari)}")
+        android.util.Log.d("MoonPhaseCalculator", "Next Full Moon:    ${formatDate(nextFullMoon)}")
+        android.util.Log.d("MoonPhaseCalculator", "Next New Moon:   ${formatDate(nextNewMoon)}")
         
         return MoonPhaseResult(
             phaseAngle = diff,
@@ -57,10 +62,14 @@ class MoonPhaseCalculator(private val astroCalculator: AstroCalculator) {
 
     /**
      * ✅ OPTIMIZAT: Găsește faza în 3 pași (zi → oră → minut)
-     * Reduce ~300 apeluri → ~50 apeluri (de 6x mai rapid!)
+     * ✅ FIX: Lucrează în UTC pentru calcul, apoi convertește rezultatul la București
      */
     private fun findNextPhase(startTime: Calendar, targetAngle: Double): Calendar {
-        val currentAngle = getCurrentPhaseAngle(startTime)
+        // ✅ Convertim startTime la UTC pentru calcul
+        val utcStartTime = Calendar.getInstance(utcTimeZone)
+        utcStartTime.timeInMillis = startTime.timeInMillis
+        
+        val currentAngle = getCurrentPhaseAngle(utcStartTime)
         
         android.util.Log.d("MoonPhaseCalculator", "📍 START SEARCH: target=$targetAngle°, current=$currentAngle°")
         
@@ -75,31 +84,31 @@ class MoonPhaseCalculator(private val astroCalculator: AstroCalculator) {
         
         val estimatedDays = ((degreesToTarget / 13.2).toInt() + 1).coerceIn(2, 35)
         
-        android.util.Log. d("MoonPhaseCalculator", "  Degrees to go: $degreesToTarget°, estimated days: $estimatedDays")
+        android.util.Log.d("MoonPhaseCalculator", "  Degrees to go: $degreesToTarget°, estimated days: $estimatedDays")
         
-        // ✅ PAS 1: Caută cu pași de 1 ZI
-        var bestTime = startTime. clone() as Calendar
+        // ✅ PAS 1: Caută cu pași de 1 ZI (în UTC)
+        var bestTime = utcStartTime.clone() as Calendar
         var bestDiff = 999.0
         
-        val searchEnd = startTime.clone() as Calendar
+        val searchEnd = utcStartTime.clone() as Calendar
         searchEnd.add(Calendar.DAY_OF_MONTH, estimatedDays + 5)
         
-        var current = startTime.clone() as Calendar
+        var current = utcStartTime.clone() as Calendar
         while (current.timeInMillis < searchEnd.timeInMillis) {
             val angle = getCurrentPhaseAngle(current)
             val diff = getAngleDifference(angle, targetAngle)
             
             if (diff < bestDiff) {
                 bestDiff = diff
-                bestTime = current. clone() as Calendar
+                bestTime = current.clone() as Calendar
             }
             
-            current.add(Calendar.DAY_OF_MONTH, 1)  // ✅ Pas MARE (1 zi)
+            current.add(Calendar.DAY_OF_MONTH, 1)
         }
         
-        android.util.Log.d("MoonPhaseCalculator", "  After DAY search: ${formatDate(bestTime)}, diff=$bestDiff°")
+        android.util.Log.d("MoonPhaseCalculator", "  After DAY search:   ${formatDate(bestTime)}, diff=$bestDiff°")
         
-        // ✅ PAS 2: Rafinare cu pași de 1 ORĂ (doar ±12h în jurul zilei găsite)
+        // ✅ PAS 2: Rafinare cu pași de 1 ORĂ
         val hourStart = bestTime.clone() as Calendar
         hourStart.add(Calendar.HOUR_OF_DAY, -12)
         val hourEnd = bestTime.clone() as Calendar
@@ -118,16 +127,16 @@ class MoonPhaseCalculator(private val astroCalculator: AstroCalculator) {
             current.add(Calendar.HOUR_OF_DAY, 1)
         }
         
-        android.util.Log.d("MoonPhaseCalculator", "  After HOUR search: ${formatDate(bestTime)}, diff=$bestDiff°")
+        android.util.Log.d("MoonPhaseCalculator", "  After HOUR search:  ${formatDate(bestTime)}, diff=$bestDiff°")
         
-        // ✅ PAS 3: Rafinare FINALĂ cu pași de 1 MINUT (doar ±1h în jurul orei găsite)
+        // ✅ PAS 3: Rafinare FINALĂ cu pași de 1 MINUT
         val minuteStart = bestTime.clone() as Calendar
-        minuteStart. add(Calendar.HOUR_OF_DAY, -1)
+        minuteStart.add(Calendar.HOUR_OF_DAY, -1)
         val minuteEnd = bestTime.clone() as Calendar
         minuteEnd.add(Calendar.HOUR_OF_DAY, 1)
         
         current = minuteStart
-        while (current. timeInMillis < minuteEnd.timeInMillis) {
+        while (current.timeInMillis < minuteEnd.timeInMillis) {
             val angle = getCurrentPhaseAngle(current)
             val diff = getAngleDifference(angle, targetAngle)
             
@@ -139,22 +148,28 @@ class MoonPhaseCalculator(private val astroCalculator: AstroCalculator) {
             current.add(Calendar.MINUTE, 1)
         }
         
-        android.util.Log.d("MoonPhaseCalculator", "✅ FOUND phase $targetAngle°:  ${formatDate(bestTime)}, diff=$bestDiff°")
+        android.util.Log.d("MoonPhaseCalculator", "✅ FOUND phase $targetAngle° (UTC):  ${formatDate(bestTime)}, diff=$bestDiff°")
         
-	
-        return bestTime
+        // ✅ Convertim rezultatul de la UTC la București
+        val bucharestResult = Calendar.getInstance(bucharestTimeZone)
+        bucharestResult.timeInMillis = bestTime.timeInMillis
+        
+        android.util.Log.d("MoonPhaseCalculator", "✅ Converted to București: ${formatDate(bucharestResult)}")
+        
+        return bucharestResult
     }
 
     /**
      * ✅ Calculează unghiul fazei pentru un moment dat
+     * IMPORTANT: time TREBUIE să fie în UTC! 
      */
     private fun getCurrentPhaseAngle(time: Calendar): Double {
-        val year = time.get(Calendar. YEAR)
+        val year = time.get(Calendar.YEAR)
         val month = time.get(Calendar.MONTH) + 1
         val day = time.get(Calendar.DAY_OF_MONTH)
         val hour = time.get(Calendar.HOUR_OF_DAY)
-        val minute = time. get(Calendar.MINUTE)
-        val second = time.get(Calendar. SECOND)
+        val minute = time.get(Calendar.MINUTE)
+        val second = time.get(Calendar.SECOND)
         
         val moonLon = astroCalculator.calculateMoonLongitude(year, month, day, hour, minute, second)
         val sunLon = astroCalculator.calculateSunLongitude(year, month, day, hour, minute, second)
@@ -174,13 +189,14 @@ class MoonPhaseCalculator(private val astroCalculator: AstroCalculator) {
 
     private fun formatDate(cal: Calendar): String {
         return String.format(
-            "%04d-%02d-%02d %02d:%02d:%02d",
+            "%04d-%02d-%02d %02d:%02d:%02d %s",
             cal.get(Calendar.YEAR),
             cal.get(Calendar.MONTH) + 1,
             cal.get(Calendar.DAY_OF_MONTH),
             cal.get(Calendar.HOUR_OF_DAY),
             cal.get(Calendar.MINUTE),
-            cal.get(Calendar. SECOND)
+            cal.get(Calendar.SECOND),
+            cal.timeZone.id
         )
     }
 }

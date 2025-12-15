@@ -20,7 +20,7 @@ import java.util.*
 fun MoonPhaseCard(
     moonSign: String,          // "29° Scorpion"
     moonPhase: MoonPhaseResult,
-    modifier:  Modifier = Modifier
+    modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -59,6 +59,18 @@ fun MoonPhaseCard(
                 )
             }
             
+            // ✅ DEBUG: Afișează ora curentă și timezone-ul
+            val currentTime = Calendar.getInstance(TimeZone.getTimeZone("Europe/Bucharest"))
+            val debugFormat = SimpleDateFormat("HH:mm:ss z (Z)", Locale.getDefault())
+            debugFormat.timeZone = TimeZone.getTimeZone("Europe/Bucharest")
+            
+            Text(
+                text = "🕐 Ora acum: ${debugFormat.format(currentTime.time)}",
+                style = MaterialTheme.typography.bodySmall,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.error
+            )
+            
             HorizontalDivider(
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f),
                 thickness = 1.dp
@@ -86,15 +98,20 @@ fun MoonPhaseCard(
 }
 
 /**
- * ✅ CORECT: Afișează direct Calendar-ul (care deja are timezone-ul setat)
+ * ✅ FIX: Convertește Calendar-ul la timezone București pentru afișare
  */
 @Composable
 private fun MoonEventRow(
-    label: String,
-    date:  Calendar
+    label:  String,
+    date: Calendar
 ) {
-    // ✅ NU mai forțăm timezone-ul, Calendar-ul deja îl are setat corect
-    val dateFormat = SimpleDateFormat("d MMM - HH:mm", Locale.getDefault())
+    // ✅ Convertim explicit la timezone București
+    val bucharestTimeZone = TimeZone.getTimeZone("Europe/Bucharest")
+    val dateFormat = SimpleDateFormat("d MMM - HH:mm z", Locale.getDefault())
+    dateFormat.timeZone = bucharestTimeZone
+    
+    // ✅ DEBUG: Log timezone-ul Calendar-ului primit
+    android.util.Log.d("MoonPhaseCard", "🕐 $label Calendar TZ: ${date.timeZone.id}, millis: ${date.timeInMillis}")
     
     Row(
         modifier = Modifier.fillMaxWidth(),
