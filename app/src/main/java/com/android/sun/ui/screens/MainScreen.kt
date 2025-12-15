@@ -26,6 +26,7 @@ import com.android.sun.ui.components.NityaExpandableCard
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.*
+import com.android.sun.ui.components.MoonPhaseCard
 
 /**
  * Ecranul principal al aplicației
@@ -84,7 +85,16 @@ fun MainScreen(
                     )
                 }
 
-                // Planetary Hours Card
+                // Moon Phase Card
+				item(key = "moon_phase") {
+					MoonPhaseCard(
+						moonSign = astroData.moonSign,
+						moonPhase = astroData.moonPhase
+					)
+				}
+				
+				
+				// Planetary Hours Card
                 item(key = "planetary_hours") {
                     val nextSunrise = astroData.sunrise.clone() as Calendar
                     nextSunrise.add(Calendar.DAY_OF_MONTH, 1)
@@ -148,9 +158,7 @@ private fun CompactInfoCard(
 
     val tattvaColor = astroData.tattva.toTattvaInfo().color
 
-    
-	
-	
+  	
 	Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -175,13 +183,6 @@ private fun CompactInfoCard(
                 .padding(16.dp)
         ) {
             
-			
-			
-			
-			
-			
-			
-			
 			// Primul rând:  Data/Ora + Settings/Refresh
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -340,7 +341,7 @@ private fun CompactInfoCard(
                 }
             }
 
-            // ✅ Al patrulea rând: Sunrise/Sunset MÂINE (font mai mic, transparență)
+            // ✅ Al patrulea rând: Sunrise/Sunset MÂINE (font 16, transparență)
             Spacer(modifier = Modifier. height(4.dp))
             
             Row(

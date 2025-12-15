@@ -24,7 +24,8 @@ class AstroRepository(private val context: Context) {
     private val subTattvaCalculator = SubTattvaCalculator()
     private val planetCalculator = PlanetCalculator()
     private val nityaCalculator = NityaCalculator()
-    private val polarityCalculator = PolarityCalculator()  // ✅ ADĂUGAT
+    private val polarityCalculator = PolarityCalculator()  
+	private val moonPhaseCalculator = MoonPhaseCalculator(astroCalculator) // ✅ ADĂUGAT
 
     /**
      * Calculează toate datele astro pentru locația și timpul curent
@@ -164,8 +165,10 @@ class AstroRepository(private val context: Context) {
         val sunLongitude = astroCalculator.calculateSunLongitude(
             year, month, day, hour, minute, second
         )
-
-        // ✅ MODIFICAT: apelează calculatePlanetaryHour cu previousSunset și nextSunrise
+		val moonPhase = moonPhaseCalculator.calculateMoonPhase(
+			moonLongitude, sunLongitude, calendar
+		)
+		// ✅ MODIFICAT: apelează calculatePlanetaryHour cu previousSunset și nextSunrise
         val planet = planetCalculator.calculatePlanetaryHour(
             calendar, sunrise, sunset, previousSunset, nextSunrise
         )
@@ -301,7 +304,9 @@ class AstroRepository(private val context: Context) {
             nextSunrisePolarity = nextSunrisePolarity,
             nextSunsetPolarity = nextSunsetPolarity,
             nextSunrisePolaritySymbol = polarityCalculator.getPolaritySymbol(nextSunrisePolarity),
-            nextSunsetPolaritySymbol = polarityCalculator.getPolaritySymbol(nextSunsetPolarity)
+            nextSunsetPolaritySymbol = polarityCalculator.getPolaritySymbol(nextSunsetPolarity),
+			// ✅ Faze luna
+			moonPhase = moonPhase
         )
 		
 		
@@ -447,15 +452,35 @@ class AstroRepository(private val context: Context) {
         return tattvaList
     }
 
-    private fun getZodiacSign(longitude: Double): String {
-        val signs = listOf(
-            "Berbec", "Taur", "Gemeni", "Rac", "Leu", "Fecioară",
-            "Balanță", "Scorpion", "Săgetător", "Capricorn", "Vărsător", "Pești"
-        )
-        val index = (longitude / 30.0).toInt() % 12
-        return signs[index]
-    }
     
+	
+	private fun getZodiacSign(longitude: Double): String {
+		val signs = listOf(
+			"Berbec", "Taur", "Gemeni", "Rac", "Leu", "Fecioară",
+			"Balanță", "Scorpion", "Săgetător", "Capricorn", "Vărsător", "Pești"
+		)
+		
+		// ✅ CORECTARE:  Normalizează longitudinea la [0, 360)
+		var normalizedLon = longitude
+		while (normalizedLon < 0) normalizedLon += 360.0
+		while (normalizedLon >= 360) normalizedLon -= 360.0
+		
+		// Calculează index-ul corect
+		val index = (normalizedLon / 30.0).toInt()
+		
+		// Calculează gradele în semnul curent
+		val degreesInSign = (normalizedLon % 30.0).toInt()
+		
+		android.util.Log.d("AstroRepository", "🌙 Zodiac:  lon=$longitude° → $normalizedLon° → ${signs[index]} $degreesInSign°")
+		
+		return "${degreesInSign}° ${signs[index]}"
+	}
+    
+	
+	
+	
+	
+	
     private fun getTattvaName(code: String): String {
         return when (code) {
             "A" -> "Akasha"
