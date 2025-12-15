@@ -214,22 +214,59 @@ class AstroRepository(private val context: Context) {
             moonLongitudeAtSunset, sunLongitudeAtSunset
         )
 
-
-
-
-
-
-
-
-
-
-
-        val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
-        val sunriseFormatted = timeFormat.format(sunrise.time)
+		
+		val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+        val sunriseFormatted = timeFormat. format(sunrise.time)
         val sunsetFormatted = timeFormat.format(sunset.time)
 
         val sunSign = getZodiacSign(sunLongitude)
         val moonSign = getZodiacSign(moonLongitude)
+		
+		
+		// ✅ CALCULEAZĂ APUSUL DE MÂINE
+        val nextSunset = astroCalculator.calculateSunset(
+            tomorrowYear, tomorrowMonth, tomorrowDay,
+            longitude, latitude, timeZone
+        )
+
+        // ✅ FORMATEAZĂ ORELE PENTRU MÂINE
+        val nextSunriseFormatted = timeFormat.format(nextSunrise.time)
+        val nextSunsetFormatted = timeFormat.format(nextSunset. time)
+
+        // ✅ CALCULEAZĂ POLARITATEA pentru răsăritul de mâine
+        val nextSunriseHour = nextSunrise.get(Calendar. HOUR_OF_DAY)
+        val nextSunriseMinute = nextSunrise.get(Calendar.MINUTE)
+        val nextSunriseSecond = nextSunrise. get(Calendar.SECOND)
+
+        val moonLongitudeAtNextSunrise = astroCalculator.calculateMoonLongitude(
+            tomorrowYear, tomorrowMonth, tomorrowDay, nextSunriseHour, nextSunriseMinute, nextSunriseSecond
+        )
+        val sunLongitudeAtNextSunrise = astroCalculator.calculateSunLongitude(
+            tomorrowYear, tomorrowMonth, tomorrowDay, nextSunriseHour, nextSunriseMinute, nextSunriseSecond
+        )
+
+        val nextSunrisePolarity = polarityCalculator.calculateSunrisePolarity(
+            moonLongitudeAtNextSunrise, sunLongitudeAtNextSunrise
+        )
+
+        // ✅ CALCULEAZĂ POLARITATEA pentru apusul de mâine
+        val nextSunsetYear = nextSunset.get(Calendar.YEAR)
+        val nextSunsetMonth = nextSunset.get(Calendar. MONTH) + 1
+        val nextSunsetDay = nextSunset.get(Calendar.DAY_OF_MONTH)
+        val nextSunsetHour = nextSunset.get(Calendar. HOUR_OF_DAY)
+        val nextSunsetMinute = nextSunset.get(Calendar.MINUTE)
+        val nextSunsetSecond = nextSunset.get(Calendar.SECOND)
+
+        val moonLongitudeAtNextSunset = astroCalculator.calculateMoonLongitude(
+            nextSunsetYear, nextSunsetMonth, nextSunsetDay, nextSunsetHour, nextSunsetMinute, nextSunsetSecond
+        )
+        val sunLongitudeAtNextSunset = astroCalculator.calculateSunLongitude(
+            nextSunsetYear, nextSunsetMonth, nextSunsetDay, nextSunsetHour, nextSunsetMinute, nextSunsetSecond
+        )
+
+        val nextSunsetPolarity = polarityCalculator.calculateSunsetPolarity(
+            moonLongitudeAtNextSunset, sunLongitudeAtNextSunset
+        )
 
         return AstroData(
             timestamp = calendar.timeInMillis,
@@ -251,12 +288,31 @@ class AstroRepository(private val context: Context) {
             latitude = latitude,
             longitude = longitude,
             timeZone = timeZone,
-            // ✅ ADĂUGAT:  Polaritate
+            // ✅ POLARITATE AZI
             sunrisePolarity = sunrisePolarity,
             sunsetPolarity = sunsetPolarity,
             sunrisePolaritySymbol = polarityCalculator.getPolaritySymbol(sunrisePolarity),
-            sunsetPolaritySymbol = polarityCalculator.getPolaritySymbol(sunsetPolarity)
+            sunsetPolaritySymbol = polarityCalculator.getPolaritySymbol(sunsetPolarity),
+            // ✅ RĂSĂRIT/APUS MÂINE
+            nextSunrise = nextSunrise,
+            nextSunset = nextSunset,
+            nextSunriseFormatted = nextSunriseFormatted,
+            nextSunsetFormatted = nextSunsetFormatted,
+            nextSunrisePolarity = nextSunrisePolarity,
+            nextSunsetPolarity = nextSunsetPolarity,
+            nextSunrisePolaritySymbol = polarityCalculator.getPolaritySymbol(nextSunrisePolarity),
+            nextSunsetPolaritySymbol = polarityCalculator.getPolaritySymbol(nextSunsetPolarity)
         )
+		
+		
+		
+		
+		
+		
+		
+		
+		
+		
     }
 
     /**
@@ -286,7 +342,7 @@ class AstroRepository(private val context: Context) {
             longitude, latitude, timeZone
         )
         
-        val timeFormat = SimpleDateFormat("HH:mm: ss", Locale.getDefault())
+        val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
         
         android.util.Log.d("TattvaDebug", "============================================")
         android.util.Log.d("TattvaDebug", "🚀 HYBRID OPTIMIZED (1 calc per Tattva! )")

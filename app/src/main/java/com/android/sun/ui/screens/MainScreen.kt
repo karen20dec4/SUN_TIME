@@ -148,7 +148,10 @@ private fun CompactInfoCard(
 
     val tattvaColor = astroData.tattva.toTattvaInfo().color
 
-    Card(
+    
+	
+	
+	Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
@@ -171,7 +174,15 @@ private fun CompactInfoCard(
                 )
                 .padding(16.dp)
         ) {
-            // Primul rând:  Data/Ora + Settings/Refresh
+            
+			
+			
+			
+			
+			
+			
+			
+			// Primul rând:  Data/Ora + Settings/Refresh
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -190,7 +201,7 @@ private fun CompactInfoCard(
                         color = Color.White
                     )
 
-                    val timeFormat = SimpleDateFormat("HH: mm:ss", Locale.getDefault())
+                    val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
                     Text(
                         text = timeFormat.format(currentTime.time),
                         style = MaterialTheme.typography.titleMedium,
@@ -269,19 +280,19 @@ private fun CompactInfoCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
-            // ✅ Al treilea rând: Sunrise/Sunset CU POLARITATE
+            // ✅ Al treilea rând: Sunrise/Sunset AZI (font mare)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Răsărit cu polaritate:  (+) ↑07:43:16
+                // Răsărit AZI cu polaritate
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = astroData.sunrisePolaritySymbol,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontSize = 16.sp,
+                        fontSize = 16.sp,  // ✅ Setare dimensiune polaritate
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
@@ -289,26 +300,26 @@ private fun CompactInfoCard(
                     Text(
                         text = "↑",
                         style = MaterialTheme.typography.bodyMedium,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontSize = 22.sp,  // ✅ Setare dimensiune săgeată
+                        fontWeight = FontWeight. Bold,
                         color = Color.White
                     )
                     Text(
                         text = astroData.sunriseFormatted,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontSize = 16.sp,
+                        fontSize = 16.sp,  // ✅ Setare dimensiune oră
                         fontWeight = FontWeight.Bold,
                         color = Color.White.copy(alpha = 0.9f)
                     )
                 }
 
-                // Apus cu polaritate:  (-) ↓16:36:15
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                // Apus AZI cu polaritate
+                Row(verticalAlignment = Alignment. CenterVertically) {
                     Text(
                         text = astroData.sunsetPolaritySymbol,
                         style = MaterialTheme.typography.bodyMedium,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight. Bold,
                         color = Color.White
                     )
                     Spacer(modifier = Modifier.width(4.dp))
@@ -325,6 +336,66 @@ private fun CompactInfoCard(
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White.copy(alpha = 0.9f)
+                    )
+                }
+            }
+
+            // ✅ Al patrulea rând: Sunrise/Sunset MÂINE (font mai mic, transparență)
+            Spacer(modifier = Modifier. height(4.dp))
+            
+            Row(
+                modifier = Modifier. fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                // Răsărit MÂINE
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = astroData.nextSunrisePolaritySymbol,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontSize = 16.sp,  // ✅ Mai mic decât azi
+                        fontWeight = FontWeight.Bold,
+                        color = Color. White. copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = "↑",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color. White. copy(alpha = 0.7f)
+                    )
+                    Text(
+                        text = astroData.nextSunriseFormatted,
+                        style = MaterialTheme.typography. bodySmall,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
+                }
+
+                // Apus MÂINE
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = astroData.nextSunsetPolaritySymbol,
+                        style = MaterialTheme. typography.bodySmall,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
+                    Spacer(modifier = Modifier.width(3.dp))
+                    Text(
+                        text = "↓",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        text = astroData.nextSunsetFormatted,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White. copy(alpha = 0.7f)
                     )
                 }
             }
