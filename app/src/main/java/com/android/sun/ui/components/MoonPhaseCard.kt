@@ -36,14 +36,14 @@ fun MoonPhaseCard(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Header:  Moon sign + Illumination
+            // Header:   Moon sign + Illumination
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Moon:  $moonSign",
+                    text = "Moon:   $moonSign",
                     style = MaterialTheme.typography.titleMedium,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
@@ -59,16 +59,17 @@ fun MoonPhaseCard(
                 )
             }
             
-            // ✅ DEBUG: Afișează ora curentă și timezone-ul
-            val currentTime = Calendar.getInstance(TimeZone.getTimeZone("Europe/Bucharest"))
+            // ✅ DEBUG: Afișează ora curentă (mic și gri)
+            val currentTimeZone = moonPhase.nextFullMoon.timeZone
+            val currentTime = Calendar.getInstance(currentTimeZone)
             val debugFormat = SimpleDateFormat("HH:mm:ss z (Z)", Locale.getDefault())
-            debugFormat.timeZone = TimeZone.getTimeZone("Europe/Bucharest")
+            debugFormat.timeZone = currentTimeZone
             
             Text(
-                text = "🕐 Ora acum: ${debugFormat.format(currentTime.time)}",
+                text = "🕐 ${debugFormat.format(currentTime.time)}",
                 style = MaterialTheme.typography.bodySmall,
                 fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.error
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
             )
             
             HorizontalDivider(
@@ -98,17 +99,26 @@ fun MoonPhaseCard(
 }
 
 /**
- * ✅ FIX: Convertește Calendar-ul la timezone București pentru afișare
+ * ✅ Afișează data folosind timezone-ul din Calendar
+ * ✅ Format: "3 Jan - 12:02 (GMT+2)" în loc de "GMT+02:00"
  */
 @Composable
 private fun MoonEventRow(
-    label:  String,
+    label: String,
     date: Calendar
 ) {
-    // ✅ Convertim explicit la timezone București
-    val bucharestTimeZone = TimeZone.getTimeZone("Europe/Bucharest")
-    val dateFormat = SimpleDateFormat("d MMM - HH:mm z", Locale.getDefault())
-    dateFormat.timeZone = bucharestTimeZone
+    // ✅ Format pentru dată și oră (fără timezone)
+    val dateFormat = SimpleDateFormat("d MMM - HH:mm", Locale.getDefault())
+    dateFormat.timeZone = date.timeZone
+    
+    // ✅ Calculează offset-ul timezone-ului în ore
+    val offsetMillis = date.timeZone.getOffset(date.timeInMillis)
+    val offsetHours = offsetMillis / (1000 * 60 * 60)
+    val timezoneText = if (offsetHours >= 0) {
+        "(GMT+$offsetHours)"
+    } else {
+        "(GMT$offsetHours)"  // Minus-ul e deja inclus
+    }
     
     // ✅ DEBUG: Log timezone-ul Calendar-ului primit
     android.util.Log.d("MoonPhaseCard", "🕐 $label Calendar TZ: ${date.timeZone.id}, millis: ${date.timeInMillis}")
@@ -125,12 +135,25 @@ private fun MoonEventRow(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         
-        Text(
-            text = dateFormat.format(date.time),
-            style = MaterialTheme.typography.bodyMedium,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        // ✅ Afișează data + timezone custom format
+        Row(
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = dateFormat.format(date.time),
+                style = MaterialTheme.typography.bodyMedium,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = timezoneText,
+                style = MaterialTheme.typography.bodySmall,
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            )
+        }
     }
 }
