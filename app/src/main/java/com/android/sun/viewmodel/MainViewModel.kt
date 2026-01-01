@@ -182,7 +182,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 			try {
 				val location = _currentLocation.value
 				
-				android.util.Log.d("MainViewModel", "🔵 Calculating for:  ${location.name} (${location.latitude}, ${location.longitude})")
+				android.util.Log.d("MainViewModel", "───────────────────────────────────────")
+				android.util.Log. d("MainViewModel", "🔵 calculateAstroData() START")
+				android.util.Log.d("MainViewModel", "🔵 Using location: ${location.name}")
+				android.util.Log. d("MainViewModel", "🔵   Lat: ${location.latitude}, Lon: ${location.longitude}")
+				android.util.Log. d("MainViewModel", "🔵   TimeZone: ${location.timeZone}")
 				
 				val data = astroRepository.calculateAstroData(
 					latitude = location.latitude,
@@ -193,18 +197,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 				)
 				_astroData.value = data
 				
-				android.util.Log. d("MainViewModel", "✅ Done:  sunrise=${data.sunriseFormatted}")
-			} catch (e:  Exception) {
-				_error.value = "Error: ${e.message}"
-				android. util.Log.e("MainViewModel", "❌ Error:  ${e.message}")
+				android.util.Log.d("MainViewModel", "✅ Calculation completed!")
+				android.util.Log. d("MainViewModel", "✅ Result: sunrise=${data.sunriseFormatted}")
+				android.util.Log. d("MainViewModel", "✅ Location in result: ${data.locationName}")
+				android.util.Log.d("MainViewModel", "───────────────────────────────────────")
+			} catch (e: Exception) {
+				_error.value = "Error:  ${e.message}"
+				android.util.Log.e("MainViewModel", "❌ Error:  ${e.message}")
 				e.printStackTrace()
 			}
 			
-			// ✅ ÎNTOTDEAUNA setează loading = false, chiar și după eroare
 			_isLoading.value = false
-			android.util.Log. d("MainViewModel", "🔵 isLoading set to false")
+			android.util.Log.d("MainViewModel", "🔵 isLoading set to false")
 		}
 	}
+
+
 
 
 
@@ -258,34 +266,99 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _codeMode.value = !_codeMode.value
     }
 
-    /**
+    
+	
+	
+	
+	/**
      * Setează o nouă locație și o salvează în SharedPreferences
      */
-    fun setLocation(location: LocationData) {
-        android.util.Log.d("MainViewModel", "🔵 setLocation: ${location.name} (${location.latitude}, ${location.longitude})")
-        
-        _currentLocation.value = location
-        
-        // Salvează în SharedPreferences
-        locationPreferences.saveSelectedLocation(
-            id = location.id,
-            name = location. name,
-            latitude = location.latitude,
-            longitude = location.longitude,
-            altitude = location.altitude,
-            timeZone = location.timeZone,
-            isGPS = location.isCurrentLocation
-        )
-        
-        calculateAstroData()
-    }
-
+	fun setLocation(location: LocationData) {
+		android.util.Log.d("MainViewModel", "═══════════════════════════════════════")
+		android.util.Log. d("MainViewModel", "🟢 setLocation() called")
+		android.util.Log. d("MainViewModel", "🟢 NEW Location: ${location.name}")
+		android.util.Log. d("MainViewModel", "🟢   Lat: ${location.latitude}, Lon: ${location.longitude}")
+		android.util.Log. d("MainViewModel", "🟢   TimeZone: ${location.timeZone}")
+		android.util.Log.d("MainViewModel", "🟢   IsGPS: ${location.isCurrentLocation}")
+		
+		val oldLocation = _currentLocation.value
+		android.util.Log.d("MainViewModel", "🟡 OLD Location: ${oldLocation. name}")
+		
+		_currentLocation.value = location
+		
+		android.util.Log. d("MainViewModel", "✅ _currentLocation updated to: ${_currentLocation.value.name}")
+		
+		// Salvează în SharedPreferences
+		locationPreferences.saveSelectedLocation(
+			id = location.id,
+			name = location.name,
+			latitude = location.latitude,
+			longitude = location.longitude,
+			altitude = location.altitude,
+			timeZone = location.timeZone,
+			isGPS = location.isCurrentLocation
+		)
+		
+		android.util.Log.d("MainViewModel", "✅ Location saved to SharedPreferences")
+		android.util.Log.d("MainViewModel", "🟢 Calling calculateAstroData()...")
+		
+		calculateAstroData()
+		
+		android.util.Log. d("MainViewModel", "═══════════════════════════════════════")
+	}
+	
+	
+	
+	
+	
+	
+	
     /**
-     * Actualizează manual datele
-     */
-    fun refresh() {
-        calculateAstroData()
-    }
+	 * ✅ Actualizează manual datele
+	 * ✅ FIX: Verifică dacă locația curentă încă există în DB
+	 */
+	fun refresh() {
+		android.util. Log.d("MainViewModel", "═══════════════════════════════════════")
+		android.util.Log.d("MainViewModel", "🔵 refresh() called")
+		
+		val currentLoc = _currentLocation.value
+		android.util.Log. d("MainViewModel", "🔵 Current location in memory: ${currentLoc.name}")
+		android.util.Log.d("MainViewModel", "🔵   Lat: ${currentLoc. latitude}, Lon: ${currentLoc.longitude}")
+		android.util.Log.d("MainViewModel", "🔵   TimeZone: ${currentLoc.timeZone}")
+		android.util.Log.d("MainViewModel", "🔵   IsGPS: ${currentLoc.isCurrentLocation}")
+		
+		viewModelScope.launch {
+			// ✅ Dacă e locație GPS, folosește-o direct
+			if (currentLoc. isCurrentLocation) {
+				android.util.Log.d("MainViewModel", "✅ GPS location, using directly")
+				calculateAstroData()
+				android.util.Log.d("MainViewModel", "═══════════════════════════════════════")
+				return@launch
+			}
+			
+			// ✅ Verifică dacă locația încă există în DB
+			android.util.Log.d("MainViewModel", "🔍 Checking if location exists in DB...")
+			val existsInDB = locationRepository.locationExistsByName(currentLoc.name)
+			android.util.Log.d("MainViewModel", "🔍 Location '${currentLoc.name}' exists in DB: $existsInDB")
+			
+			if (existsInDB) {
+				android.util.Log.d("MainViewModel", "✅ Location exists, calculating astro data...")
+				calculateAstroData()
+			} else {
+				android.util.Log.w("MainViewModel", "⚠️ Location '${currentLoc.name}' not found in DB!")
+				android.util.Log.w("MainViewModel", "⚠️ Resetting to București...")
+				resetToDefaultLocation()
+				calculateAstroData()
+			}
+			
+			android.util.Log. d("MainViewModel", "═══════════════════════════════════════")
+		}
+	}
+
+
+
+
+
 
     /**
      * Obține locația default (București)

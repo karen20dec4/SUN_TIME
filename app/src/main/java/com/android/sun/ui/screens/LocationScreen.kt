@@ -43,6 +43,7 @@ private const val TAG = "LocationScreen"
 @Composable
 fun LocationScreen(
     viewModel: LocationViewModel,
+	mainViewModel: com.android.sun.viewmodel.MainViewModel,  // ✅ ADĂUGAT
     onLocationSelected: (LocationData) -> Unit,
     onBack: () -> Unit
 ) {
@@ -224,6 +225,10 @@ fun LocationScreen(
 						modifier = Modifier.fillMaxSize(),
 						verticalArrangement = Arrangement.spacedBy(8.dp)
 					) {
+						
+						
+						
+						
 						items(
 							items = locations,
 							key = { it.id }
@@ -231,15 +236,31 @@ fun LocationScreen(
 							LocationItemCompact(
 								location = location,
 								onSelect = { 
-									Log.d(TAG, "Select clicked for: ${location.name}")
-									onLocationSelected(location) 
+									android.util.Log. d("LocationScreen", "═══════════════════════════════════════")
+									android.util.Log. d("LocationScreen", "🟢 SELECT BUTTON CLICKED")
+									android.util.Log. d("LocationScreen", "🟢 Selected location: ${location.name}")
+									android.util.Log.d("LocationScreen", "🟢   Lat: ${location.latitude}, Lon: ${location.longitude}")
+									android.util.Log. d("LocationScreen", "🟢 Calling onLocationSelected...")
+									onLocationSelected(location)
+									android.util.Log. d("LocationScreen", "🟢 Calling mainViewModel.refresh()...")
+									mainViewModel.refresh()
+									android.util.Log.d("LocationScreen", "🟢 Refresh called!")
+									android.util.Log.d("LocationScreen", "═══════════════════════════════════════")
 								},
 								onDelete = { 
-									Log.d(TAG, "Delete clicked for: ${location.name}")
+									android.util.Log.d("LocationScreen", "❌ DELETE clicked for: ${location.name}")
 									viewModel.deleteLocation(location)
 								}
 							)
 						}
+						
+						
+						
+						
+						
+						
+						
+						
 						
 						// ✅ Buton Load Defaults la sfârșitul listei
 						item(key = "load_defaults") {
