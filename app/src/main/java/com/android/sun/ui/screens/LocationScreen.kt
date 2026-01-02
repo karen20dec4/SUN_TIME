@@ -32,6 +32,9 @@ import androidx.core.content.ContextCompat
 import android.util.Log
 import com.android.sun.data.model.LocationData
 import com.android.sun.viewmodel.LocationViewModel
+import androidx.compose.material.icons.filled.Clear
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 
 private const val TAG = "LocationScreen"
 
@@ -39,19 +42,43 @@ private const val TAG = "LocationScreen"
  * Ecran pentru selectarea și gestionarea locațiilor
  * Listă compactă cu expand/collapse pentru detalii (Lat/Lon/Alt)
  */
+
+
+
+
+
+
+
+
+
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LocationScreen(
     viewModel: LocationViewModel,
-	mainViewModel: com.android.sun.viewmodel.MainViewModel,  // ✅ ADĂUGAT
+    mainViewModel: com.android.sun.viewmodel.MainViewModel,
     onLocationSelected: (LocationData) -> Unit,
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
     val locations by viewModel.locations.collectAsState()
-    val currentGPSLocation by viewModel.currentGPSLocation.collectAsState()
+    val currentGPSLocation by viewModel.currentGPSLocation. collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val error by viewModel.error.collectAsState()
+    val error by viewModel.error. collectAsState()
+    
+    // ✅ State pentru filtrul de căutare
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    
+    // ✅ Filtrează locațiile în funcție de query
+    val filteredLocations = remember(locations, searchQuery) {
+        if (searchQuery.isBlank()) {
+            locations
+        } else {
+            locations.filter { location ->
+                location.name.contains(searchQuery, ignoreCase = true)
+            }
+        }
+    }
     
     // State pentru dialogul Add Location
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
@@ -91,17 +118,17 @@ fun LocationScreen(
             Log.d(TAG, "✅ Already has permission, loading GPS...")
             viewModel.loadGPSLocation()
         } else {
-            Log.d(TAG, "🔵 Requesting permissions from user...")
-            permissionLauncher.launch(
+            Log. d(TAG, "🔵 Requesting permissions from user...")
+            permissionLauncher. launch(
                 arrayOf(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
+                    Manifest. permission.ACCESS_FINE_LOCATION,
+                    Manifest. permission.ACCESS_COARSE_LOCATION
                 )
             )
         }
     }
 
-    Log.d(TAG, "LocationScreen: rendering, locations count = ${locations.size}")
+    Log.d(TAG, "LocationScreen: rendering, locations count = ${locations.size}, filtered = ${filteredLocations.size}")
 
     Scaffold(
         topBar = {
@@ -110,7 +137,7 @@ fun LocationScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            imageVector = Icons.AutoMirrored. Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -120,7 +147,7 @@ fun LocationScreen(
     ) { paddingValues ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                . fillMaxSize()
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
@@ -145,7 +172,7 @@ fun LocationScreen(
                             text = errorMessage,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier. weight(1f)
                         )
                         TextButton(onClick = { viewModel.clearError() }) {
                             Text("OK")
@@ -154,52 +181,109 @@ fun LocationScreen(
                 }
             }
 
-            // Secțiunea GPS - folosește requestGPSLocation în loc de viewModel.loadGPSLocation
+            // Secțiunea GPS
             GPSLocationSection(
                 currentGPSLocation = currentGPSLocation,
                 isLoading = isLoading,
                 onUseGPS = { onLocationSelected(it) },
-                onLoadGPS = { requestGPSLocation() }  // ✅ Modificat aici! 
+                onLoadGPS = { requestGPSLocation() },
+                onRefresh = { requestGPSLocation() }  // ✅ ADĂUGAT
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier. height(16.dp))
             HorizontalDivider()
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier. height(16.dp))
 
-            // Header cu titlu și buton Add
+            // ✅ Header cu câmp de căutare și buton Add
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier. fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Saved Locations",
-                    style = MaterialTheme.typography.titleMedium
+                // ✅ Search Field
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    label = { Text("Search location") },
+                    placeholder = { Text("Type city name...") },
+                    singleLine = true,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled. Search,
+                            contentDescription = "Search"
+                        )
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(
+                                    imageVector = Icons. Filled.Clear,
+                                    contentDescription = "Clear search"
+                                )
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
                 )
                 
                 // Buton Add Location
-                FilledTonalButton(
+                FilledTonalIconButton(
                     onClick = { showAddDialog = true }
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Add,
-                        contentDescription = "Add Location",
-                        modifier = Modifier.size(18.dp)
+                        contentDescription = "Add Location"
                     )
-                    Spacer(Modifier.width(4.dp))
-                    Text("Add Location")
                 }
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier. height(8.dp))
 
-            // Lista de locații salvate
+            // ✅ Afișare număr rezultate
+            if (searchQuery.isNotEmpty()) {
+                Text(
+                    text = "${filteredLocations.size} location(s) found",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier. padding(bottom = 8.dp)
+                )
+            }
+
+            // ✅ Lista de locații filtrate
             when {
                 isLoading && locations.isEmpty() -> {
                     Box(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier. fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) { CircularProgressIndicator() }
+                }
+                filteredLocations.isEmpty() && searchQuery.isNotEmpty() -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = Icons.Filled.Search,
+                                contentDescription = null,
+                                modifier = Modifier.size(48.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Spacer(Modifier.height(16.dp))
+                            Text(
+                                "No locations found",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            Text(
+                                text = "Try a different search term",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
                 }
                 locations.isEmpty() -> {
                     Box(
@@ -207,7 +291,7 @@ fun LocationScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("No saved locations", style = MaterialTheme.typography.bodyLarge)
+                            Text("No saved locations", style = MaterialTheme.typography. bodyLarge)
                             Spacer(Modifier.height(8.dp))
                             Text(
                                 text = "Use GPS location or add manually",
@@ -217,77 +301,59 @@ fun LocationScreen(
                         }
                     }
                 }
-                
-				
-				
-				else -> {
-					LazyColumn(
-						modifier = Modifier.fillMaxSize(),
-						verticalArrangement = Arrangement.spacedBy(8.dp)
-					) {
-						
-						
-						
-						
-						items(
-							items = locations,
-							key = { it.id }
-						) { location ->
-							LocationItemCompact(
-								location = location,
-								onSelect = { 
-									android.util.Log. d("LocationScreen", "═══════════════════════════════════════")
-									android.util.Log. d("LocationScreen", "🟢 SELECT BUTTON CLICKED")
-									android.util.Log. d("LocationScreen", "🟢 Selected location: ${location.name}")
-									android.util.Log.d("LocationScreen", "🟢   Lat: ${location.latitude}, Lon: ${location.longitude}")
-									android.util.Log. d("LocationScreen", "🟢 Calling onLocationSelected...")
-									onLocationSelected(location)
-									android.util.Log. d("LocationScreen", "🟢 Calling mainViewModel.refresh()...")
-									mainViewModel.refresh()
-									android.util.Log.d("LocationScreen", "🟢 Refresh called!")
-									android.util.Log.d("LocationScreen", "═══════════════════════════════════════")
-								},
-								onDelete = { 
-									android.util.Log.d("LocationScreen", "❌ DELETE clicked for: ${location.name}")
-									viewModel.deleteLocation(location)
-								}
-							)
-						}
-						
-						
-						
-						
-						
-						
-						
-						
-						
-						// ✅ Buton Load Defaults la sfârșitul listei
-						item(key = "load_defaults") {
-							Spacer(modifier = Modifier.height(16.dp))
-							
-							Button(
-								onClick = {
-									Log.d(TAG, "🔵 Load Defaults clicked")
-									viewModel.loadDefaultLocations()
-								},
-								modifier = Modifier.fillMaxWidth(),
-								colors = ButtonDefaults.buttonColors(
-									containerColor = MaterialTheme.colorScheme.secondary
-								)
-							) {
-								Text("Load Defaults")
-							}
-							
-							Spacer(modifier = Modifier.height(8.dp))
-						}
-					}
-				}
-				
-				
-				
-				
-				
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier. fillMaxSize(),
+                        verticalArrangement = Arrangement. spacedBy(8.dp)
+                    ) {
+                        items(
+                            items = filteredLocations,
+                            key = { it.id }
+                        ) { location ->
+                            LocationItemCompact(
+                                location = location,
+                                onSelect = { 
+                                    android.util.Log.d("LocationScreen", "═══════════════════════════════════════")
+                                    android.util. Log.d("LocationScreen", "🟢 SELECT BUTTON CLICKED")
+                                    android.util. Log.d("LocationScreen", "🟢 Selected location: ${location.name}")
+                                    android.util.Log. d("LocationScreen", "🟢   Lat: ${location.latitude}, Lon: ${location.longitude}")
+                                    android.util. Log.d("LocationScreen", "🟢 Calling onLocationSelected...")
+                                    onLocationSelected(location)
+                                    android.util.Log.d("LocationScreen", "🟢 Calling mainViewModel.refresh()...")
+                                    mainViewModel.refresh()
+                                    android.util.Log.d("LocationScreen", "🟢 Refresh called!")
+                                    android.util.Log.d("LocationScreen", "═══════════════════════════════════════")
+                                },
+                                onDelete = { 
+                                    android.util. Log.d("LocationScreen", "❌ DELETE clicked for: ${location.name}")
+                                    viewModel.deleteLocation(location)
+                                }
+                            )
+                        }
+                        
+                        // Buton Load Defaults la sfârșitul listei (doar dacă nu e căutare activă)
+                        if (searchQuery.isEmpty()) {
+                            item(key = "load_defaults") {
+                                Spacer(modifier = Modifier. height(16.dp))
+                                
+                                Button(
+                                    onClick = {
+                                        Log.d(TAG, "🔵 Load Defaults clicked")
+                                        viewModel.loadDefaultLocations()
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = MaterialTheme.colorScheme.secondary
+                                    )
+                                ) {
+                                    Text("Load Default Locations")
+                                }
+                                
+                                Spacer(modifier = Modifier.height(8.dp))
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -303,6 +369,15 @@ fun LocationScreen(
         )
     }
 }
+
+
+
+
+
+
+
+
+
 
 
 
@@ -484,13 +559,14 @@ private fun AddLocationDialog(
 private fun GPSLocationSection(
     currentGPSLocation: LocationData?,
     isLoading: Boolean,
-    onUseGPS: (LocationData) -> Unit,
-    onLoadGPS: () -> Unit
+    onUseGPS:  (LocationData) -> Unit,
+    onLoadGPS: () -> Unit,
+    onRefresh:  () -> Unit  // ✅ ADĂUGAT
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier. fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer
+            containerColor = MaterialTheme. colorScheme.primaryContainer
         )
     ) {
         Column(
@@ -498,6 +574,7 @@ private fun GPSLocationSection(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
+            // ✅ Header cu titlu și buton refresh
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -508,11 +585,31 @@ private fun GPSLocationSection(
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onPrimaryContainer
                 )
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        strokeWidth = 2.dp
-                    )
+                
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement. spacedBy(8.dp)
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier. size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    }
+                    
+                    // ✅ Buton refresh GPS
+                    if (currentGPSLocation != null && !isLoading) {
+                        IconButton(
+                            onClick = onRefresh,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled. Refresh,
+                                contentDescription = "Refresh GPS location",
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                            )
+                        }
+                    }
                 }
             }
 
@@ -522,9 +619,9 @@ private fun GPSLocationSection(
                 Column(Modifier.fillMaxWidth()) {
                     InfoRow(label = "Lat:", value = String.format("%.4f°", currentGPSLocation.latitude))
                     Spacer(Modifier.height(4.dp))
-                    InfoRow(label = "Lon:", value = String.format("%.4f°", currentGPSLocation.longitude))
+                    InfoRow(label = "Lon:", value = String. format("%.4f°", currentGPSLocation.longitude))
                     Spacer(Modifier.height(4.dp))
-                    InfoRow(label = "Alt:", value = "${currentGPSLocation.altitude.toInt()}m")
+                    InfoRow(label = "Alt:", value = "${currentGPSLocation.altitude. toInt()}m")
 
                     Spacer(Modifier.height(12.dp))
 
@@ -547,7 +644,7 @@ private fun GPSLocationSection(
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !isLoading
                 ) {
-                    Icon(imageVector = Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(20.dp))
+                    Icon(imageVector = Icons.Filled. LocationOn, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Get GPS Location")
                 }
@@ -557,12 +654,17 @@ private fun GPSLocationSection(
                 Text(
                     text = "Tap to get current GPS coordinates",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onPrimaryContainer. copy(alpha = 0.7f)
                 )
             }
         }
     }
 }
+
+
+
+
+
 
 		/**
 		 * Item compact cu expand/collapse intern
