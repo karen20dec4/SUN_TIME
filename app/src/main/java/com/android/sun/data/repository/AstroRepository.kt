@@ -316,12 +316,28 @@ class AstroRepository(private val context: Context) {
         )
     }
 
-    // ... restul codului rămâne neschimbat ...
 
-    /**
-     * ✅ HIBRID OPTIMIZAT: Folosește TattvaCalculator DOAR pentru prima SubTattva, 
-     * apoi calculează restul direct (reduce 300 apeluri → 60 apeluri = de 5 ori mai rapid!)
-     * Garantează precizie perfectă cu MainScreen!  
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    
+	
+	
+	    /**
+     * ✅ CORECTAT: Folosește durate FIXE pentru Tattva (1440 sec) și SubTattva (288 sec)
+     * Fiecare Tattva mare = 24 minute = 1440 secunde
+     * Fiecare SubTattva = 4 min 48 sec = 288 secunde
      */
     fun generateTattvaDaySchedule(
         sunriseTime: Calendar,
@@ -332,71 +348,45 @@ class AstroRepository(private val context: Context) {
     ): List<TattvaDayItem> {
         val tattvaList = mutableListOf<TattvaDayItem>()
         
-        // Calculează răsăritul de mâine
-        val tomorrowDate = sunriseTime.clone() as Calendar
-        tomorrowDate.add(Calendar.DAY_OF_MONTH, 1)
-        
-        val nextSunriseYear = tomorrowDate.get(Calendar.YEAR)
-        val nextSunriseMonth = tomorrowDate.get(Calendar.MONTH) + 1
-        val nextSunriseDay = tomorrowDate.get(Calendar.DAY_OF_MONTH)
-        
-        val nextSunrise = astroCalculator.calculateSunrise(
-            nextSunriseYear, nextSunriseMonth, nextSunriseDay,
-            longitude, latitude, timeZone
-        )
-        
         val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
         
         android.util.Log.d("TattvaDebug", "============================================")
-        android.util.Log.d("TattvaDebug", "🚀 HYBRID OPTIMIZED (1 calc per Tattva! )")
-        android.util.Log.d("TattvaDebug", "============================================")
-        android.util.Log.d("TattvaDebug", "🌅 Sunrise: ${timeFormat.format(sunriseTime.time)}")
-        android.util.Log.d("TattvaDebug", "🌅 Next Sunrise: ${timeFormat.format(nextSunrise.time)}")
+        android.util.Log. d("TattvaDebug", "🚀 FIXED: Using exact 1440sec/Tattva, 288sec/SubTattva")
+        android.util. Log.d("TattvaDebug", "============================================")
+        android.util.Log. d("TattvaDebug", "🌅 Sunrise: ${timeFormat.format(sunriseTime.time)}")
         
         val startTime = System.currentTimeMillis()
         
         val tattvaSequence = listOf("A", "V", "T", "Ap", "P")
         var cycleNumber = 1
         
-        // ✅ Calculează duratele pentru verificări rapide
-        val totalMillis = nextSunrise.timeInMillis - sunriseTime.timeInMillis
-        val tattvaDurationMillis = totalMillis / 60L
+        // ✅ DURATĂ FIXĂ - NU mai calculăm dinamic!
+        val tattvaDurationMillis = 1440 * 1000L   // 24 minute = 1440 secunde
+        val subTattvaDurationMillis = 288 * 1000L // 4 min 48 sec = 288 secunde
         
-        // ✅ Generează 60 Tattva-uri
+        // ✅ Generează 60 Tattva-uri cu durate FIXE
         for (tattvaIndex in 0 until 60) {
             val tattvaCode = tattvaSequence[tattvaIndex % 5]
             
-            // ✅ Calculează timpul aproximativ pentru Tattva
-            val tattvaTimeMillis = sunriseTime.timeInMillis + (tattvaDurationMillis * tattvaIndex)
-            val tattvaTime = Calendar.getInstance().apply {
-                timeInMillis = tattvaTimeMillis
+            // ✅ CORECT: Calculează timpul EXACT pentru Tattva
+            val tattvaStartMillis = sunriseTime.timeInMillis + (tattvaDurationMillis * tattvaIndex)
+            val tattvaEndMillis = tattvaStartMillis + tattvaDurationMillis
+            
+            val tattvaStartTime = Calendar.getInstance().apply {
+                timeInMillis = tattvaStartMillis
             }
-            
-            // ✅ Folosește TattvaCalculator pentru PRIMA SubTattva (garantează precizie!)
-            val firstSubTime = tattvaTime.clone() as Calendar
-            val firstSubResult = subTattvaCalculator.calculateCurrentSubTattva(
-                firstSubTime, sunriseTime, nextSunrise
-            )
-            
-            // ✅ Folosește timpul EXACT din SubTattvaCalculator pentru Tattva
-            val tattvaStartTime = firstSubResult.startTime.clone() as Calendar
-            
-            // ✅ Calculează durata EXACTĂ a SubTattva din rezultat
-            val subTattvaDurationMillis = firstSubResult.endTime.timeInMillis - firstSubResult.startTime.timeInMillis
-            
-            // ✅ Calculează Tattva End Time EXACT
             val tattvaEndTime = Calendar.getInstance().apply {
-                timeInMillis = tattvaStartTime.timeInMillis + (subTattvaDurationMillis * 5)
+                timeInMillis = tattvaEndMillis
             }
             
-            // ✅ Generează SubTattva-uri folosind durata EXACTĂ
+            // ✅ Generează 5 SubTattva-uri cu durată FIXĂ de 288 secunde
             val subTattvas = mutableListOf<SubTattvaItem>()
             
             for (subIndex in 0 until 5) {
                 val subCode = tattvaSequence[subIndex]
                 
-                // ✅ Calculează START EXACT
-                val subStartMillis = tattvaStartTime.timeInMillis + (subTattvaDurationMillis * subIndex)
+                // ✅ Calculează START și END EXACT pentru fiecare SubTattva
+                val subStartMillis = tattvaStartMillis + (subTattvaDurationMillis * subIndex)
                 val subEndMillis = subStartMillis + subTattvaDurationMillis
                 
                 val subStartTime = Calendar.getInstance().apply {
@@ -419,8 +409,8 @@ class AstroRepository(private val context: Context) {
             }
             
             // Verifică dacă Tattva e curentă
-            val isTattvaCurrent = currentTime.timeInMillis >= tattvaStartTime.timeInMillis &&
-                                  currentTime.timeInMillis < tattvaEndTime.timeInMillis
+            val isTattvaCurrent = currentTime.timeInMillis >= tattvaStartMillis &&
+                                  currentTime. timeInMillis < tattvaEndMillis
             
             tattvaList.add(
                 TattvaDayItem(
@@ -443,14 +433,31 @@ class AstroRepository(private val context: Context) {
         val endTime = System.currentTimeMillis()
         val duration = endTime - startTime
         
-        android.util.Log.d("TattvaDebug", "✅ Generated ${tattvaList.size} Tattvas in ${duration}ms!")
-        android.util.Log.d("TattvaDebug", "🎯 Using EXACT times from SubTattvaCalculator!")
-        android.util.Log.d("TattvaDebug", "============================================")
+        android.util.Log.d("TattvaDebug", "✅ Generated ${tattvaList. size} Tattvas in ${duration}ms!")
+        android.util.Log. d("TattvaDebug", "🎯 First Tattva: ${timeFormat.format(tattvaList[0]. startTime. time)}")
+        android.util.Log.d("TattvaDebug", "🎯 Second Tattva (VAYU): ${timeFormat.format(tattvaList[1].startTime.time)}")
+        android.util. Log.d("TattvaDebug", "============================================")
         
         return tattvaList
     }
+	
+	
+	
 
-    private fun getZodiacSign(longitude: Double): String {
+    
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	private fun getZodiacSign(longitude: Double): String {
         val signs = listOf(
             "Berbec", "Taur", "Gemeni", "Rac", "Leu", "Fecioară",
             "Balanță", "Scorpion", "Săgetător", "Capricorn", "Vărsător", "Pești"
