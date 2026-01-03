@@ -253,7 +253,40 @@ class LocationViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    /**
+    
+	
+	 /**
+     * ✅ Șterge toate locațiile salvate, păstrând doar București
+     */
+    fun clearSavedLocations() {
+        android.util.Log. d("LocationViewModel", "🗑️ clearSavedLocations() CALLED")
+        
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            
+            try {
+                locationRepository.clearSavedLocations()
+                android.util.Log. d("LocationViewModel", "✅ Saved locations cleared")
+            } catch (e: Exception) {
+                _error.value = "Error clearing locations: ${e.message}"
+                e.printStackTrace()
+            } finally {
+                _isLoading. value = false
+            }
+        }
+    }
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	/**
      * Verifică dacă are permisiuni GPS
      */
     fun hasLocationPermission(): Boolean {

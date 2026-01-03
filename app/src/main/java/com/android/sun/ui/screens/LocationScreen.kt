@@ -338,15 +338,15 @@ fun LocationScreen(
                                 
                                 Button(
                                     onClick = {
-                                        Log.d(TAG, "🔵 Load Defaults clicked")
-                                        viewModel.loadDefaultLocations()
+                                        Log.d(TAG, "🗑️ Clear saved locations clicked")
+                                        viewModel.clearSavedLocations()
                                     },
                                     modifier = Modifier.fillMaxWidth(),
-                                    colors = ButtonDefaults.buttonColors(
+                                    colors = ButtonDefaults. buttonColors(
                                         containerColor = MaterialTheme.colorScheme.secondary
                                     )
                                 ) {
-                                    Text("Load Default Locations")
+                                    Text("Clear saved locations")
                                 }
                                 
                                 Spacer(modifier = Modifier.height(8.dp))
