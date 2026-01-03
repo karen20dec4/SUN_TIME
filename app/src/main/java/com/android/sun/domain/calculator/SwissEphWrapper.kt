@@ -133,75 +133,61 @@ class SwissEphWrapper(private val context: Context) {
         }
     }
 
-    /**
-     * ✅ Copiază fișierele ephemeris din assets - THREAD-SAFE
-     */
-    private fun copyEphemerisFiles(): String {
-        val epheDir = File(context.filesDir, "sweph/data")
-        if (!epheDir. exists()) {
-            epheDir.mkdirs()
-        }
+		/**
+		 * ✅ Copiază fișierele ephemeris din assets - THREAD-SAFE
+		 * Șterge întotdeauna fișierele existente pentru a preveni corupția
+		 */
+		private fun copyEphemerisFiles(): String {
+			val epheDir = File(context.filesDir, "sweph/data")
+			if (!epheDir.exists()) {
+				epheDir.mkdirs()
+			}
 
-        val assetManager = context. assets
-        val files = arrayOf("seas_18.se1", "semo_18.se1", "sepl_18.se1")
+			val assetManager = context.assets
+			val files = arrayOf("seas_18.se1", "semo_18.se1", "sepl_18.se1")
 
-        files.forEach { fileName ->
-            val outFile = File(epheDir, fileName)
-            
-            // ✅ Verifică dacă fișierul există și are dimensiune corectă
-            val expectedSizes = mapOf(
-                "seas_18.se1" to 223002L,
-                "semo_18.se1" to 1304771L,
-                "sepl_18.se1" to 484055L
-            )
-            
-            val expectedSize = expectedSizes[fileName] ?: 0L
-            
-            if (outFile.exists() && outFile.length() == expectedSize) {
-                android.util. Log.d("SwissEphWrapper", "✓ $fileName already exists with correct size (${outFile.length()} bytes)")
-                return@forEach
-            }
-            
-            // Șterge fișierul existent dacă are dimensiune incorectă
-            if (outFile. exists()) {
-                android.util.Log. d("SwissEphWrapper", "Deleting corrupted $fileName (size: ${outFile. length()}, expected: $expectedSize)")
-                outFile.delete()
-            }
-            
-            try {
-                // ✅ Copiază fișierul cu buffer mare pentru performanță
-                assetManager.open("sweph/data/$fileName").use { input ->
-                    FileOutputStream(outFile).use { output ->
-                        val buffer = ByteArray(8192)
-                        var bytesRead:  Int
-                        while (input.read(buffer).also { bytesRead = it } != -1) {
-                            output.write(buffer, 0, bytesRead)
-                        }
-                        output.flush()
-                    }
-                }
-                
-                val size = outFile.length()
-                android.util. Log.d("SwissEphWrapper", "✓ Copied $fileName ($size bytes)")
-                
-                if (size == 0L) {
-                    throw RuntimeException("File $fileName is EMPTY after copy!")
-                }
-                
-                if (size != expectedSize) {
-                    android.util.Log. w("SwissEphWrapper", "⚠️ $fileName size mismatch: got $size, expected $expectedSize")
-                }
-                
-            } catch (e:  Exception) {
-                android.util.Log.e("SwissEphWrapper", "✗ Failed to copy $fileName", e)
-                throw RuntimeException("Failed to copy ephemeris file: $fileName", e)
-            }
-        }
+			files.forEach { fileName ->
+				val outFile = File(epheDir, fileName)
+				
+				// ✅ ȘTERGE întotdeauna fișierul existent pentru a evita corupția
+				if (outFile.exists()) {
+					android.util.Log.d("SwissEphWrapper", "Deleting existing $fileName to prevent corruption")
+					outFile. delete()
+				}
+				
+				try {
+					// ✅ Copiază fișierul cu buffer mare pentru performanță
+					assetManager.open("sweph/data/$fileName").use { input ->
+						FileOutputStream(outFile).use { output ->
+							val buffer = ByteArray(8192)
+							var bytesRead: Int
+							while (input.read(buffer).also { bytesRead = it } != -1) {
+								output.write(buffer, 0, bytesRead)
+							}
+							output.flush()
+						}
+					}
+					
+					val size = outFile.length()
+					android.util.Log.d("SwissEphWrapper", "✓ Copied $fileName ($size bytes)")
+					
+					if (size == 0L) {
+						throw RuntimeException("File $fileName is EMPTY after copy!")
+					}
+					
+				} catch (e: Exception) {
+					android.util. Log.e("SwissEphWrapper", "✗ Failed to copy $fileName", e)
+					throw RuntimeException("Failed to copy ephemeris file: $fileName", e)
+				}
+			}
 
-        return epheDir.absolutePath
-    }
+			return epheDir.absolutePath
+		}
 
-    /**
+    
+	
+	
+	/**
      * ✅ Verifică dacă eroarea indică fișiere corupte
      */
     private fun isCorruptionError(error: String? ): Boolean {
