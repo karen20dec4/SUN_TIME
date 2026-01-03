@@ -21,6 +21,10 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import com.android.sun.data.model.PredefinedCities
+import com.android.sun.data.model.PredefinedCity
+
+
 
 /**
  * Repository pentru gestionarea locațiilor
@@ -108,33 +112,43 @@ class LocationRepository(private val context: Context) {
 	
 	
 	
-        /**
-     * ✅ Încarcă DOAR București ca locație default
-     * Apelat la prima pornire a aplicației
-     */
-    suspend fun loadDefaultLocations() = withContext(Dispatchers.IO) {
-        android.util.Log. d("LocationRepository", "🔵 Loading default location (București only)...")
-        
-        // Verifică dacă București există deja
-        val bucharest = placeDao.getPlaceByName("București")
-        if (bucharest == null) {
-            placeDao.insertPlace(
-                PlaceEntity(
-                    name = "București",
-                    longitude = 26.1025,
-                    latitude = 44.4268,
-                    altitude = 80.0,
-                    timeZone = 2.0,
-                    dst = 0
-                )
-            )
-            android.util.Log.d("LocationRepository", "✅ București added as default")
-        } else {
-            android.util.Log. d("LocationRepository", "✅ București already exists")
-        }
-    }
+		    /**
+			 * ✅ Încarcă DOAR București ca locație default
+			 * Apelat la prima pornire a aplicației
+			 */
+			suspend fun loadDefaultLocations() = withContext(Dispatchers.IO) {
+				android.util.Log. d("LocationRepository", "🔵 Loading default location (București only)...")
+				
+				// Verifică dacă există deja locații în DB
+				// Dacă DA, nu face nimic (utilizatorul are deja date)
+				// Dacă NU, adaugă doar București
+				
+				val existingCount = placeDao.getPlacesCount()
+				if (existingCount > 0) {
+					android.util. Log.d("LocationRepository", "✅ DB already has $existingCount locations, skipping default load")
+					return@withContext
+				}
+				
+				// Adaugă doar București
+				placeDao.insertPlace(
+					PlaceEntity(
+						name = "București",
+						longitude = 26.1025,
+						latitude = 44.4268,
+						altitude = 80.0,
+						timeZone = 2.0,
+						dst = 0
+					)
+				)
+				
+				android.util.Log. d("LocationRepository", "✅ București added as default location")
+			}
 
-    /**
+    
+	
+	
+	
+	/**
      * ✅ Șterge toate locațiile salvate, păstrând DOAR București
      * Apelat când utilizatorul apasă "Clear saved locations"
      */
@@ -160,6 +174,41 @@ class LocationRepository(private val context: Context) {
     }
 
     
+	
+	    /**
+		 * ✅ Caută în lista de orașe predefinite (pentru search)
+		 * Returnează lista de orașe care se potrivesc cu query-ul
+		 * NU accesează baza de date - caută doar în lista statică
+		 */
+		fun searchPredefinedCities(query: String): List<PredefinedCity> {
+			return PredefinedCities.search(query)
+		}
+		
+		/**
+		 * ✅ Adaugă un oraș predefinit în baza de date (locații salvate)
+		 */
+		suspend fun addPredefinedCity(city:  PredefinedCity) = withContext(Dispatchers.IO) {
+			android.util.Log.d("LocationRepository", "➕ Adding predefined city: ${city.name}, ${city.country}")
+			
+			// Verifică dacă există deja
+			val existingPlace = placeDao.getPlaceByName("${city.name}, ${city.country}")
+			if (existingPlace != null) {
+				android.util.Log. d("LocationRepository", "⚠️ City already exists, skipping")
+				return@withContext
+			}
+			
+			// Adaugă în DB
+			val entity = PlaceEntity(
+				name = "${city. name}, ${city. country}",
+				latitude = city.latitude,
+				longitude = city.longitude,
+				altitude = city.altitude,
+				timeZone = city.timeZone,
+				dst = 0
+			)
+			placeDao.insertPlace(entity)
+			android.util. Log.d("LocationRepository", "✅ City added to saved locations")
+		}
 	
 	
 	

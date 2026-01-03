@@ -1,80 +1,140 @@
 package com.android.sun.domain.calculator
 
-import android.content. Context
+import android.content.Context
 import swisseph.SweDate
-import swisseph. SwissEph
+import swisseph.SwissEph
 import swisseph.DblObj
 import java.io.File
-import java. io.FileOutputStream
+import java.io.FileOutputStream
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent. withLock
 
 /**
- * Wrapper pentru Swiss Ephemeris - CU fișiere reale
- * ✅ AUTO-RECOVERY: Reinițializează automat fișierele corupte
+ * Wrapper pentru Swiss Ephemeris - THREAD-SAFE
+ * ✅ Folosește ReentrantLock pentru a preveni accesul concurent
+ * ✅ AUTO-RECOVERY:  Reinițializează automat fișierele corupte
  */
 class SwissEphWrapper(private val context: Context) {
 
-    private var swissEph: SwissEph?  = null
+    private var swissEph:  SwissEph?  = null
     private var ephePath: String = ""
+    
+    @Volatile
     private var isInitialized = false
+    
+    @Volatile
+    private var isInitializing = false
+    
     private var retryCount = 0
     private val maxRetries = 2
+
+    // ✅ Lock pentru thread-safety
+    private val lock = ReentrantLock()
+    private val initLock = ReentrantLock()
 
     init {
         initializeSwissEph()
     }
 
     /**
-     * ✅ Inițializează Swiss Ephemeris
+     * ✅ Inițializează Swiss Ephemeris - THREAD-SAFE
      */
     private fun initializeSwissEph() {
-        try {
-            ephePath = copyEphemerisFiles()
-            swissEph = SwissEph()
-            swissEph?.swe_set_ephe_path(ephePath)
-            isInitialized = true
-            retryCount = 0
-            android.util.Log.d("SwissEphWrapper", "✅ Swiss Ephemeris initialized at: $ephePath")
-        } catch (e: Exception) {
-            android.util.Log. e("SwissEphWrapper", "❌ Failed to initialize Swiss Ephemeris", e)
-            isInitialized = false
-            throw e
-        }
-    }
-
-    /**
-     * ✅ Reinițializează Swiss Ephemeris după detectarea corupției
-     */
-    private fun reinitializeSwissEph() {
-        android.util.Log.w("SwissEphWrapper", "⚠️ Reinitializing Swiss Ephemeris (attempt ${retryCount + 1}/$maxRetries)...")
-        
-        // Închide instanța curentă
-        swissEph?.swe_close()
-        swissEph = null
-        isInitialized = false
-        
-        // Șterge fișierele corupte
-        val epheDir = File(context.filesDir, "sweph/data")
-        if (epheDir.exists()) {
-            epheDir.listFiles()?.forEach { file ->
-                if (file.name.endsWith(".se1")) {
-                    val deleted = file.delete()
-                    android.util.Log.d("SwissEphWrapper", "Deleted corrupted file: ${file. name} -> $deleted")
-                }
+        initLock.withLock {
+            if (isInitialized) {
+                android.util.Log. d("SwissEphWrapper", "✅ Already initialized, skipping")
+                return
+            }
+            
+            if (isInitializing) {
+                android.util.Log. d("SwissEphWrapper", "⏳ Already initializing, waiting...")
+                return
+            }
+            
+            isInitializing = true
+            
+            try {
+                ephePath = copyEphemerisFiles()
+                swissEph = SwissEph()
+                swissEph?. swe_set_ephe_path(ephePath)
+                isInitialized = true
+                retryCount = 0
+                android.util.Log.d("SwissEphWrapper", "✅ Swiss Ephemeris initialized at:  $ephePath")
+            } catch (e: Exception) {
+                android.util. Log.e("SwissEphWrapper", "❌ Failed to initialize Swiss Ephemeris", e)
+                isInitialized = false
+                throw e
+            } finally {
+                isInitializing = false
             }
         }
-        
-        // Reinițializează
-        try {
-            initializeSwissEph()
-            android.util.Log.d("SwissEphWrapper", "✅ Swiss Ephemeris successfully reinitialized!")
-        } catch (e: Exception) {
-            android.util.Log.e("SwissEphWrapper", "❌ Failed to reinitialize Swiss Ephemeris", e)
-            throw RuntimeException("Failed to reinitialize Swiss Ephemeris after corruption", e)
+    }
+
+    /**
+     * ✅ Reinițializează Swiss Ephemeris - THREAD-SAFE
+     */
+    private fun reinitializeSwissEph() {
+        initLock.withLock {
+            // Verifică din nou după ce am obținut lock-ul
+            if (isInitializing) {
+                android.util.Log.d("SwissEphWrapper", "⏳ Another thread is reinitializing, waiting...")
+                // Așteaptă puțin și returnează
+                Thread.sleep(100)
+                return
+            }
+            
+            android.util.Log. w("SwissEphWrapper", "⚠️ Reinitializing Swiss Ephemeris (attempt ${retryCount}/$maxRetries)...")
+            
+            isInitializing = true
+            isInitialized = false
+            
+            try {
+                // Închide instanța curentă
+                try {
+                    swissEph?.swe_close()
+                } catch (e: Exception) {
+                    android.util.Log. w("SwissEphWrapper", "Warning closing SwissEph: ${e.message}")
+                }
+                swissEph = null
+                
+                // Șterge fișierele corupte
+                val epheDir = File(context.filesDir, "sweph/data")
+                if (epheDir.exists()) {
+                    epheDir.listFiles()?.forEach { file ->
+                        if (file.name.endsWith(".se1")) {
+                            try {
+                                val deleted = file.delete()
+                                android.util.Log. d("SwissEphWrapper", "Deleted corrupted file: ${file.name} -> $deleted")
+                            } catch (e: Exception) {
+                                android.util.Log.w("SwissEphWrapper", "Failed to delete ${file.name}: ${e.message}")
+                            }
+                        }
+                    }
+                }
+                
+                // Așteaptă puțin pentru a permite sistemului să elibereze resursele
+                Thread.sleep(50)
+                
+                // Reinițializează
+                ephePath = copyEphemerisFiles()
+                swissEph = SwissEph()
+                swissEph?.swe_set_ephe_path(ephePath)
+                isInitialized = true
+                
+                android.util.Log. d("SwissEphWrapper", "✅ Swiss Ephemeris successfully reinitialized!")
+                
+            } catch (e: Exception) {
+                android.util. Log.e("SwissEphWrapper", "❌ Failed to reinitialize Swiss Ephemeris", e)
+                isInitialized = false
+                throw RuntimeException("Failed to reinitialize Swiss Ephemeris after corruption", e)
+            } finally {
+                isInitializing = false
+            }
         }
     }
 
     /**
-     * ✅ Copiază fișierele ephemeris din assets
+     * ✅ Copiază fișierele ephemeris din assets - THREAD-SAFE
      */
     private fun copyEphemerisFiles(): String {
         val epheDir = File(context.filesDir, "sweph/data")
@@ -82,33 +142,57 @@ class SwissEphWrapper(private val context: Context) {
             epheDir.mkdirs()
         }
 
-        val assetManager = context.assets
+        val assetManager = context. assets
         val files = arrayOf("seas_18.se1", "semo_18.se1", "sepl_18.se1")
 
         files.forEach { fileName ->
             val outFile = File(epheDir, fileName)
             
-            // ✅ FORȚEAZĂ re-copierea pentru a înlocui fișierele corupte
-            if (outFile.exists()) {
-                android.util.Log.d("SwissEphWrapper", "Deleting old $fileName")
+            // ✅ Verifică dacă fișierul există și are dimensiune corectă
+            val expectedSizes = mapOf(
+                "seas_18.se1" to 223002L,
+                "semo_18.se1" to 1304771L,
+                "sepl_18.se1" to 484055L
+            )
+            
+            val expectedSize = expectedSizes[fileName] ?: 0L
+            
+            if (outFile.exists() && outFile.length() == expectedSize) {
+                android.util. Log.d("SwissEphWrapper", "✓ $fileName already exists with correct size (${outFile.length()} bytes)")
+                return@forEach
+            }
+            
+            // Șterge fișierul existent dacă are dimensiune incorectă
+            if (outFile. exists()) {
+                android.util.Log. d("SwissEphWrapper", "Deleting corrupted $fileName (size: ${outFile. length()}, expected: $expectedSize)")
                 outFile.delete()
             }
             
             try {
+                // ✅ Copiază fișierul cu buffer mare pentru performanță
                 assetManager.open("sweph/data/$fileName").use { input ->
                     FileOutputStream(outFile).use { output ->
-                        input.copyTo(output)
+                        val buffer = ByteArray(8192)
+                        var bytesRead:  Int
+                        while (input.read(buffer).also { bytesRead = it } != -1) {
+                            output.write(buffer, 0, bytesRead)
+                        }
+                        output.flush()
                     }
                 }
                 
                 val size = outFile.length()
-                android.util.Log.d("SwissEphWrapper", "✓ Copied $fileName ($size bytes)")
+                android.util. Log.d("SwissEphWrapper", "✓ Copied $fileName ($size bytes)")
                 
                 if (size == 0L) {
                     throw RuntimeException("File $fileName is EMPTY after copy!")
                 }
                 
-            } catch (e: Exception) {
+                if (size != expectedSize) {
+                    android.util.Log. w("SwissEphWrapper", "⚠️ $fileName size mismatch: got $size, expected $expectedSize")
+                }
+                
+            } catch (e:  Exception) {
                 android.util.Log.e("SwissEphWrapper", "✗ Failed to copy $fileName", e)
                 throw RuntimeException("Failed to copy ephemeris file: $fileName", e)
             }
@@ -127,176 +211,285 @@ class SwissEphWrapper(private val context: Context) {
                error.contains("file error", ignoreCase = true) ||
                error.contains("coefficients instead", ignoreCase = true) ||
                error.contains("wrong", ignoreCase = true) ||
-               error.contains("rename to", ignoreCase = true)
+               error.contains("rename to", ignoreCase = true) ||
+               error.contains("ArrayIndexOutOfBounds", ignoreCase = true) ||
+               error.contains("exceeds file length", ignoreCase = true)
     }
 
-    fun getJulianDay(year:  Int, month: Int, day:  Int, hour: Double): Double {
+    fun getJulianDay(year: Int, month:  Int, day: Int, hour: Double): Double {
         val sweDate = SweDate(year, month, day, hour)
-        return sweDate. julDay
+        return sweDate.julDay
     }
 
     /**
-     * ✅ Calculează rise/transit/set cu AUTO-RECOVERY
+     * ✅ Calculează rise/transit/set cu AUTO-RECOVERY - THREAD-SAFE
      */
     fun calculateRiseTransSet(
-        julianDay: Double,
+        julianDay:  Double,
         body: Int,
         longitude: Double,
         latitude: Double,
-        riseSetFlag:  Int
+        riseSetFlag: Int
     ): Double {
-        if (!isInitialized || swissEph == null) {
-            android.util.Log.e("SwissEphWrapper", "❌ Swiss Ephemeris not initialized!")
-            throw RuntimeException("Swiss Ephemeris not initialized")
-        }
+        lock.withLock {
+            if (! isInitialized || swissEph == null) {
+                if (! isInitializing) {
+                    android.util.Log. w("SwissEphWrapper", "⚠️ Not initialized, attempting to initialize...")
+                    try {
+                        initializeSwissEph()
+                    } catch (e: Exception) {
+                        android.util.Log.e("SwissEphWrapper", "❌ Failed to initialize on demand", e)
+                        throw RuntimeException("Swiss Ephemeris not initialized", e)
+                    }
+                } else {
+                    // Așteaptă să se termine inițializarea
+                    Thread.sleep(100)
+                    if (!isInitialized) {
+                        throw RuntimeException("Swiss Ephemeris not initialized")
+                    }
+                }
+            }
 
-        try {
-            val geopos = DoubleArray(3)
-            geopos[0] = longitude
-            geopos[1] = latitude
-            geopos[2] = 0.0
+            try {
+                val geopos = DoubleArray(3)
+                geopos[0] = longitude
+                geopos[1] = latitude
+                geopos[2] = 0.0
 
-            val tret = DblObj()
-            val serr = StringBuffer()
+                val tret = DblObj()
+                val serr = StringBuffer()
 
-            val result = swissEph!! .swe_rise_trans(
-                julianDay,
-                body,
-                null,
-                SEFLG_SWIEPH,
-                riseSetFlag,
-                geopos,
-                1013.25,
-                10.0,
-                tret,
-                serr
-            )
+                val result = swissEph!! .swe_rise_trans(
+                    julianDay,
+                    body,
+                    null,
+                    SEFLG_SWIEPH,
+                    riseSetFlag,
+                    geopos,
+                    1013.25,
+                    10.0,
+                    tret,
+                    serr
+                )
 
-            if (result < 0) {
-                val errorMsg = serr.toString()
-                android.util.Log.e("SwissEphWrapper", "Rise/Set error: $errorMsg")
+                if (result < 0) {
+                    val errorMsg = serr.toString()
+                    android.util. Log.e("SwissEphWrapper", "Rise/Set error: $errorMsg")
+                    
+                    // ✅ Detectează corupție și reinițializează
+                    if (isCorruptionError(errorMsg) && retryCount < maxRetries) {
+                        retryCount++
+                        reinitializeSwissEph()
+                        
+                        // Reîncearcă calculul (recursiv dar cu lock-ul ținut)
+                        return calculateRiseTransSetInternal(julianDay, body, longitude, latitude, riseSetFlag)
+                    }
+                    
+                    throw RuntimeException("Error calculating rise/set:  $errorMsg")
+                }
+
+                // Reset retry counter pe succes
+                retryCount = 0
+                return tret. `val`
                 
-                // ✅ Detectează corupție și reinițializează
-                if (isCorruptionError(errorMsg) && retryCount < maxRetries) {
+            } catch (e: NullPointerException) {
+                android. util.Log.e("SwissEphWrapper", "❌ NullPointerException - corrupted ephemeris!", e)
+                
+                if (retryCount < maxRetries) {
                     retryCount++
                     reinitializeSwissEph()
-                    
-                    // Reîncearcă calculul
-                    return calculateRiseTransSet(julianDay, body, longitude, latitude, riseSetFlag)
+                    return calculateRiseTransSetInternal(julianDay, body, longitude, latitude, riseSetFlag)
                 }
                 
-                throw RuntimeException("Error calculating rise/set: $errorMsg")
-            }
-
-            // Reset retry counter pe succes
-            retryCount = 0
-            return tret.`val`
-            
-        } catch (e: NullPointerException) {
-            android.util.Log.e("SwissEphWrapper", "❌ NullPointerException - corrupted ephemeris!", e)
-            
-            if (retryCount < maxRetries) {
-                retryCount++
-                reinitializeSwissEph()
+                throw RuntimeException("NullPointerException after $maxRetries retries", e)
                 
-                // Reîncearcă calculul
-                return calculateRiseTransSet(julianDay, body, longitude, latitude, riseSetFlag)
-            }
-            
-            throw RuntimeException("NullPointerException after $maxRetries retries", e)
-        } catch (e: Exception) {
-            android.util.Log.e("SwissEphWrapper", "❌ Unexpected error in calculateRiseTransSet", e)
-            
-            // Verifică dacă mesajul de eroare indică corupție
-            if (isCorruptionError(e. message) && retryCount < maxRetries) {
-                retryCount++
-                reinitializeSwissEph()
+            } catch (e: ArrayIndexOutOfBoundsException) {
+                android.util. Log.e("SwissEphWrapper", "❌ ArrayIndexOutOfBoundsException - corrupted ephemeris!", e)
                 
-                // Reîncearcă calculul
-                return calculateRiseTransSet(julianDay, body, longitude, latitude, riseSetFlag)
+                if (retryCount < maxRetries) {
+                    retryCount++
+                    reinitializeSwissEph()
+                    return calculateRiseTransSetInternal(julianDay, body, longitude, latitude, riseSetFlag)
+                }
+                
+                throw RuntimeException("ArrayIndexOutOfBoundsException after $maxRetries retries", e)
+                
+            } catch (e: Exception) {
+                android.util.Log.e("SwissEphWrapper", "❌ Unexpected error in calculateRiseTransSet", e)
+                
+                if (isCorruptionError(e.message) && retryCount < maxRetries) {
+                    retryCount++
+                    reinitializeSwissEph()
+                    return calculateRiseTransSetInternal(julianDay, body, longitude, latitude, riseSetFlag)
+                }
+                
+                throw RuntimeException("Error calculating rise/set:  ${e.message}", e)
             }
-            
-            throw RuntimeException("Error calculating rise/set: ${e. message}", e)
         }
     }
 
     /**
-     * ✅ Calculează poziția corpului ceresc cu AUTO-RECOVERY
+     * ✅ Versiune internă pentru retry (fără lock - deja avem lock-ul)
+     */
+    private fun calculateRiseTransSetInternal(
+        julianDay:  Double,
+        body: Int,
+        longitude: Double,
+        latitude: Double,
+        riseSetFlag: Int
+    ): Double {
+        val geopos = DoubleArray(3)
+        geopos[0] = longitude
+        geopos[1] = latitude
+        geopos[2] = 0.0
+
+        val tret = DblObj()
+        val serr = StringBuffer()
+
+        val result = swissEph!!.swe_rise_trans(
+            julianDay,
+            body,
+            null,
+            SEFLG_SWIEPH,
+            riseSetFlag,
+            geopos,
+            1013.25,
+            10.0,
+            tret,
+            serr
+        )
+
+        if (result < 0) {
+            throw RuntimeException("Error calculating rise/set: ${serr}")
+        }
+
+        retryCount = 0
+        return tret.`val`
+    }
+
+    /**
+     * ✅ Calculează poziția corpului ceresc cu AUTO-RECOVERY - THREAD-SAFE
      */
     fun calculateBodyPosition(julianDay: Double, body: Int): Double {
-        if (!isInitialized || swissEph == null) {
-            android.util.Log.e("SwissEphWrapper", "❌ Swiss Ephemeris not initialized!")
-            throw RuntimeException("Swiss Ephemeris not initialized")
-        }
+        lock. withLock {
+            if (!isInitialized || swissEph == null) {
+                if (! isInitializing) {
+                    android.util.Log. w("SwissEphWrapper", "⚠️ Not initialized, attempting to initialize...")
+                    try {
+                        initializeSwissEph()
+                    } catch (e: Exception) {
+                        android.util.Log.e("SwissEphWrapper", "❌ Failed to initialize on demand", e)
+                        throw RuntimeException("Swiss Ephemeris not initialized", e)
+                    }
+                } else {
+                    Thread.sleep(100)
+                    if (! isInitialized) {
+                        throw RuntimeException("Swiss Ephemeris not initialized")
+                    }
+                }
+            }
 
-        try {
-            val xx = DoubleArray(6)
-            val serr = StringBuffer()
+            try {
+                val xx = DoubleArray(6)
+                val serr = StringBuffer()
 
-            val result = swissEph!!.swe_calc_ut(
-                julianDay,
-                body,
-                SEFLG_SWIEPH,
-                xx,
-                serr
-            )
+                val result = swissEph!! .swe_calc_ut(
+                    julianDay,
+                    body,
+                    SEFLG_SWIEPH,
+                    xx,
+                    serr
+                )
 
-            if (result < 0) {
-                val errorMsg = serr.toString()
-                android.util.Log. e("SwissEphWrapper", "Body position error: $errorMsg")
+                if (result < 0) {
+                    val errorMsg = serr.toString()
+                    android.util.Log.e("SwissEphWrapper", "Body position error: $errorMsg")
+                    
+                    if (isCorruptionError(errorMsg) && retryCount < maxRetries) {
+                        retryCount++
+                        reinitializeSwissEph()
+                        return calculateBodyPositionInternal(julianDay, body)
+                    }
+                    
+                    throw RuntimeException("Error calculating body position: $errorMsg")
+                }
+
+                retryCount = 0
+                return xx[0]
                 
-                // ✅ Detectează corupție și reinițializează
-                if (isCorruptionError(errorMsg) && retryCount < maxRetries) {
+            } catch (e: NullPointerException) {
+                android.util.Log.e("SwissEphWrapper", "❌ NullPointerException - corrupted ephemeris!", e)
+                
+                if (retryCount < maxRetries) {
                     retryCount++
                     reinitializeSwissEph()
-                    
-                    // Reîncearcă calculul
-                    return calculateBodyPosition(julianDay, body)
+                    return calculateBodyPositionInternal(julianDay, body)
                 }
                 
-                throw RuntimeException("Error calculating body position: $errorMsg")
-            }
-
-            // Reset retry counter pe succes
-            retryCount = 0
-            return xx[0]
-            
-        } catch (e: NullPointerException) {
-            android.util. Log.e("SwissEphWrapper", "❌ NullPointerException - corrupted ephemeris!", e)
-            
-            if (retryCount < maxRetries) {
-                retryCount++
-                reinitializeSwissEph()
+                throw RuntimeException("NullPointerException after $maxRetries retries", e)
                 
-                // Reîncearcă calculul
-                return calculateBodyPosition(julianDay, body)
-            }
-            
-            throw RuntimeException("NullPointerException after $maxRetries retries", e)
-        } catch (e: Exception) {
-            android.util.Log.e("SwissEphWrapper", "❌ Unexpected error in calculateBodyPosition", e)
-            
-            // Verifică dacă mesajul de eroare indică corupție
-            if (isCorruptionError(e. message) && retryCount < maxRetries) {
-                retryCount++
-                reinitializeSwissEph()
+            } catch (e: ArrayIndexOutOfBoundsException) {
+                android.util.Log. e("SwissEphWrapper", "❌ ArrayIndexOutOfBoundsException - corrupted ephemeris!", e)
                 
-                // Reîncearcă calculul
-                return calculateBodyPosition(julianDay, body)
+                if (retryCount < maxRetries) {
+                    retryCount++
+                    reinitializeSwissEph()
+                    return calculateBodyPositionInternal(julianDay, body)
+                }
+                
+                throw RuntimeException("ArrayIndexOutOfBoundsException after $maxRetries retries", e)
+                
+            } catch (e: Exception) {
+                android.util.Log.e("SwissEphWrapper", "❌ Unexpected error in calculateBodyPosition", e)
+                
+                if (isCorruptionError(e.message) && retryCount < maxRetries) {
+                    retryCount++
+                    reinitializeSwissEph()
+                    return calculateBodyPositionInternal(julianDay, body)
+                }
+                
+                throw RuntimeException("Error calculating body position: ${e. message}", e)
             }
-            
-            throw RuntimeException("Error calculating body position: ${e.message}", e)
         }
     }
 
     /**
-     * ✅ Închide Swiss Ephemeris când nu mai este nevoie
+     * ✅ Versiune internă pentru retry (fără lock - deja avem lock-ul)
+     */
+    private fun calculateBodyPositionInternal(julianDay: Double, body: Int): Double {
+        val xx = DoubleArray(6)
+        val serr = StringBuffer()
+
+        val result = swissEph!!.swe_calc_ut(
+            julianDay,
+            body,
+            SEFLG_SWIEPH,
+            xx,
+            serr
+        )
+
+        if (result < 0) {
+            throw RuntimeException("Error calculating body position: ${serr}")
+        }
+
+        retryCount = 0
+        return xx[0]
+    }
+
+    /**
+     * ✅ Închide Swiss Ephemeris
      */
     fun close() {
-        swissEph?.swe_close()
-        swissEph = null
-        isInitialized = false
-        android.util.Log.d("SwissEphWrapper", "Swiss Ephemeris closed")
+        lock.withLock {
+            try {
+                swissEph?.swe_close()
+            } catch (e:  Exception) {
+                android.util.Log.w("SwissEphWrapper", "Warning closing SwissEph:  ${e.message}")
+            }
+            swissEph = null
+            isInitialized = false
+            android.util.Log. d("SwissEphWrapper", "Swiss Ephemeris closed")
+        }
     }
 
     companion object {
