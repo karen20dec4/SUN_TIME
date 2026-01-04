@@ -25,7 +25,6 @@ class AstroRepository(private val context: Context) {
     private val planetCalculator = PlanetCalculator()
     private val nityaCalculator = NityaCalculator()
     private val polarityCalculator = PolarityCalculator()  
-    // ❌ ȘTERS:  private val moonPhaseCalculator = MoonPhaseCalculator(astroCalculator)
 
     /**
      * Calculează toate datele astro pentru locația și timpul curent
@@ -35,7 +34,7 @@ class AstroRepository(private val context: Context) {
         longitude: Double,
         timeZone: Double,
         locationName: String,
-        isGPSLocation:  Boolean = false
+        isGPSLocation: Boolean = false
     ): AstroData = withContext(Dispatchers.Default) {
         val currentTime = Calendar.getInstance()
         calculateAstroDataForTime(currentTime, latitude, longitude, timeZone, locationName, isGPSLocation)
@@ -47,7 +46,7 @@ class AstroRepository(private val context: Context) {
     fun getRealtimeAstroData(
         latitude: Double,
         longitude: Double,
-        timeZone: Double,
+        timeZone:  Double,
         locationName: String
     ): Flow<AstroData> = flow {
         while (true) {
@@ -65,7 +64,7 @@ class AstroRepository(private val context: Context) {
      */
     private fun getTattvaDayStart(
         currentTime: Calendar,
-        latitude:  Double,
+        latitude: Double,
         longitude: Double,
         timeZone: Double
     ): Calendar {
@@ -200,12 +199,12 @@ class AstroRepository(private val context: Context) {
             sunriseYear, sunriseMonth, sunriseDay, sunriseHour, sunriseMinute, sunriseSecond
         )
         
-        // ✅ FIX:  Apelează cu 2 parametri Double, nu Calendar
+        // ✅ FIX: Apelează cu 2 parametri Double, nu Calendar
         val sunrisePolarity = polarityCalculator.calculateSunrisePolarity(
             moonLongitudeAtSunrise, sunLongitudeAtSunrise
         )
 
-        // ✅ ADĂUGAT: Calculează polaritatea la apus
+        // ✅ ADĂUGAT:  Calculează polaritatea la apus
         val sunsetYear = sunset.get(Calendar.YEAR)
         val sunsetMonth = sunset.get(Calendar.MONTH) + 1
         val sunsetDay = sunset.get(Calendar.DAY_OF_MONTH)
@@ -225,9 +224,23 @@ class AstroRepository(private val context: Context) {
             moonLongitudeAtSunset, sunLongitudeAtSunset
         )
 
-        val timeFormat = SimpleDateFormat("HH: mm: ss", Locale.getDefault())
+        // ═══════════════════════════════════════════════════════════════════
+        // ✅ FIX MAJOR: Folosim timezone-ul LOCAȚIEI pentru formatare, nu al telefonului!
+        // ═══════════════════════════════════════════════════════════════════
+        val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+        timeFormat.timeZone = locationTimeZone  // ✅ ACEASTA ESTE CHEIA FIX-ULUI!
+        
         val sunriseFormatted = timeFormat.format(sunrise.time)
         val sunsetFormatted = timeFormat.format(sunset.time)
+        
+        // ✅ DEBUG LOG - pentru verificare
+        android.util.Log.d("AstroRepository", "═══════════════════════════════════════")
+        android.util.Log.d("AstroRepository", "📍 Location: $locationName")
+        android.util.Log.d("AstroRepository", "📍 TimeZone offset: $timeZone ore")
+        android.util.Log.d("AstroRepository", "📍 LocationTimeZone: ${locationTimeZone.id}")
+        android.util.Log.d("AstroRepository", "🌅 Sunrise formatted: $sunriseFormatted")
+        android.util.Log.d("AstroRepository", "🌇 Sunset formatted:  $sunsetFormatted")
+        android.util.Log.d("AstroRepository", "═══════════════════════════════════════")
 
         val sunSign = getZodiacSign(sunLongitude)
         val moonSign = getZodiacSign(moonLongitude)
@@ -238,7 +251,7 @@ class AstroRepository(private val context: Context) {
             longitude, latitude, timeZone
         )
 
-        // ✅ FORMATEAZĂ ORELE PENTRU MÂINE
+        // ✅ FORMATEAZĂ ORELE PENTRU MÂINE (folosind același timeFormat cu timezone-ul locației)
         val nextSunriseFormatted = timeFormat.format(nextSunrise.time)
         val nextSunsetFormatted = timeFormat.format(nextSunset.time)
 
@@ -316,25 +329,7 @@ class AstroRepository(private val context: Context) {
         )
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-    
-	
-	
-	    /**
+    /**
      * ✅ CORECTAT: Folosește durate FIXE pentru Tattva (1440 sec) și SubTattva (288 sec)
      * Fiecare Tattva mare = 24 minute = 1440 secunde
      * Fiecare SubTattva = 4 min 48 sec = 288 secunde
@@ -343,24 +338,29 @@ class AstroRepository(private val context: Context) {
         sunriseTime: Calendar,
         latitude: Double,
         longitude: Double,
-        timeZone: Double,
+        timeZone:  Double,
         currentTime: Calendar = Calendar.getInstance()
     ): List<TattvaDayItem> {
         val tattvaList = mutableListOf<TattvaDayItem>()
         
+        // ✅ FIX: Folosim timezone-ul locației pentru formatare
+        val offsetMillis = (timeZone * 3600 * 1000).toInt()
+        val locationTimeZone = SimpleTimeZone(offsetMillis, "Location")
+        
         val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+        timeFormat.timeZone = locationTimeZone  // ✅ IMPORTANT! 
         
         android.util.Log.d("TattvaDebug", "============================================")
-        android.util.Log. d("TattvaDebug", "🚀 FIXED: Using exact 1440sec/Tattva, 288sec/SubTattva")
-        android.util. Log.d("TattvaDebug", "============================================")
-        android.util.Log. d("TattvaDebug", "🌅 Sunrise: ${timeFormat.format(sunriseTime.time)}")
+        android.util.Log.d("TattvaDebug", "🚀 FIXED: Using exact 1440sec/Tattva, 288sec/SubTattva")
+        android.util.Log.d("TattvaDebug", "============================================")
+        android.util.Log.d("TattvaDebug", "🌅 Sunrise:  ${timeFormat.format(sunriseTime.time)}")
         
         val startTime = System.currentTimeMillis()
         
         val tattvaSequence = listOf("A", "V", "T", "Ap", "P")
         var cycleNumber = 1
         
-        // ✅ DURATĂ FIXĂ - NU mai calculăm dinamic!
+        // ✅ DURATĂ FIXĂ - NU mai calculăm dinamic! 
         val tattvaDurationMillis = 1440 * 1000L   // 24 minute = 1440 secunde
         val subTattvaDurationMillis = 288 * 1000L // 4 min 48 sec = 288 secunde
         
@@ -372,10 +372,11 @@ class AstroRepository(private val context: Context) {
             val tattvaStartMillis = sunriseTime.timeInMillis + (tattvaDurationMillis * tattvaIndex)
             val tattvaEndMillis = tattvaStartMillis + tattvaDurationMillis
             
-            val tattvaStartTime = Calendar.getInstance().apply {
+            // ✅ FIX: Creează Calendar cu timezone-ul locației
+            val tattvaStartTime = Calendar.getInstance(locationTimeZone).apply {
                 timeInMillis = tattvaStartMillis
             }
-            val tattvaEndTime = Calendar.getInstance().apply {
+            val tattvaEndTime = Calendar.getInstance(locationTimeZone).apply {
                 timeInMillis = tattvaEndMillis
             }
             
@@ -389,7 +390,8 @@ class AstroRepository(private val context: Context) {
                 val subStartMillis = tattvaStartMillis + (subTattvaDurationMillis * subIndex)
                 val subEndMillis = subStartMillis + subTattvaDurationMillis
                 
-                val subStartTime = Calendar.getInstance().apply {
+                // ✅ FIX: Creează Calendar cu timezone-ul locației
+                val subStartTime = Calendar.getInstance(locationTimeZone).apply {
                     timeInMillis = subStartMillis
                 }
                 
@@ -410,7 +412,7 @@ class AstroRepository(private val context: Context) {
             
             // Verifică dacă Tattva e curentă
             val isTattvaCurrent = currentTime.timeInMillis >= tattvaStartMillis &&
-                                  currentTime. timeInMillis < tattvaEndMillis
+                                  currentTime.timeInMillis < tattvaEndMillis
             
             tattvaList.add(
                 TattvaDayItem(
@@ -433,37 +435,21 @@ class AstroRepository(private val context: Context) {
         val endTime = System.currentTimeMillis()
         val duration = endTime - startTime
         
-        android.util.Log.d("TattvaDebug", "✅ Generated ${tattvaList. size} Tattvas in ${duration}ms!")
-        android.util.Log. d("TattvaDebug", "🎯 First Tattva: ${timeFormat.format(tattvaList[0]. startTime. time)}")
+        android.util.Log.d("TattvaDebug", "✅ Generated ${tattvaList.size} Tattvas in ${duration}ms!")
+        android.util.Log.d("TattvaDebug", "🎯 First Tattva: ${timeFormat.format(tattvaList[0].startTime.time)}")
         android.util.Log.d("TattvaDebug", "🎯 Second Tattva (VAYU): ${timeFormat.format(tattvaList[1].startTime.time)}")
-        android.util. Log.d("TattvaDebug", "============================================")
+        android.util.Log.d("TattvaDebug", "============================================")
         
         return tattvaList
     }
-	
-	
-	
 
-    
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	private fun getZodiacSign(longitude: Double): String {
+    private fun getZodiacSign(longitude: Double): String {
         val signs = listOf(
             "Berbec", "Taur", "Gemeni", "Rac", "Leu", "Fecioară",
             "Balanță", "Scorpion", "Săgetător", "Capricorn", "Vărsător", "Pești"
         )
         
-        // ✅ CORECTARE:  Normalizează longitudinea la [0, 360)
+        // ✅ CORECTARE: Normalizează longitudinea la [0, 360)
         var normalizedLon = longitude
         while (normalizedLon < 0) normalizedLon += 360.0
         while (normalizedLon >= 360) normalizedLon -= 360.0

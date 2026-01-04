@@ -1,6 +1,6 @@
 package com.android.sun.ui.screens
 
-import androidx.compose.material. icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -32,6 +32,7 @@ import java.util.*
 /**
  * Ecran "ALL DAY" - Harta completă a Tattva-urilor pentru ziua curentă
  * ✅ Versiune COMPACTĂ - afișare simplificată a SubTattvas
+ * ✅ FIX: Adăugat parametrul timeZone pentru afișare corectă a orelor
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,14 +41,25 @@ fun AllDayScreen(
     sunriseDate: Calendar,
     sunriseTime: String,
     sunsetTime: String,
-    actualSunriseTime: Calendar,
+    actualSunriseTime:  Calendar,
+    timeZone: Double,  // ✅ NOU:  Parametru pentru timezone-ul locației
     onBackClick: () -> Unit,
     onNextDayClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val listState = rememberLazyListState()
-    val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.US)
-    val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+    
+    // ✅ FIX: Creăm timezone-ul locației
+    val offsetMillis = (timeZone * 3600 * 1000).toInt()
+    val locationTimeZone = SimpleTimeZone(offsetMillis, "Location")
+    
+    // ✅ FIX:  Folosim timezone-ul locației pentru formatare
+    val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.US).apply {
+        this.timeZone = locationTimeZone
+    }
+    val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).apply {
+        this.timeZone = locationTimeZone
+    }
     
     // ✅ Timp curent LIVE
     var currentTime by remember { mutableStateOf(Calendar.getInstance()) }
@@ -66,7 +78,7 @@ fun AllDayScreen(
     var hasScrolled by remember { mutableStateOf(false) }
     
     LaunchedEffect(tattvaDaySchedule) {
-        if (!hasScrolled) {
+        if (! hasScrolled) {
             val currentIndex = tattvaDaySchedule.indexOfFirst { it.isCurrent }
             if (currentIndex != -1) {
                 expandedTattvaIndex = currentIndex
@@ -95,8 +107,6 @@ fun AllDayScreen(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 20.sp
                             )
-                            
-
                         }
                         
                         Spacer(modifier = Modifier.height(2.dp))
@@ -161,6 +171,7 @@ fun AllDayScreen(
                         tattvaItem = tattvaItem,
                         isExpanded = expandedTattvaIndex == index,
                         currentTime = currentTime,
+                        locationTimeZone = locationTimeZone,  // ✅ FIX:  Trimitem timezone-ul
                         onClick = {
                             expandedTattvaIndex = if (expandedTattvaIndex == index) null else index
                         }
@@ -207,16 +218,21 @@ private fun CycleDelimiter(cycleNumber: Int) {
 
 /**
  * Card individual pentru o Tattva - VERSIUNE COMPACTĂ
+ * ✅ FIX: Primește locationTimeZone pentru formatare corectă
  */
 @Composable
 private fun TattvaDayItemCard(
-    tattvaItem: TattvaDayItem,
+    tattvaItem:  TattvaDayItem,
     isExpanded: Boolean,
-    currentTime: Calendar,
+    currentTime:  Calendar,
+    locationTimeZone: TimeZone,  // ✅ FIX:  Parametru nou
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+    // ✅ FIX: Folosim timezone-ul locației pentru formatare
+    val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault()).apply {
+        this.timeZone = locationTimeZone
+    }
     
     // ✅ Verifică LIVE dacă Tattva e curentă
     val isTattvaCurrentNow = currentTime.timeInMillis >= tattvaItem.startTime.timeInMillis &&
@@ -319,9 +335,12 @@ private fun TattvaDayItemCard(
                     val tattvaDurationMs = tattvaItem.endTime.timeInMillis - tattvaItem.startTime.timeInMillis
                     val subTattvaDurationMs = tattvaDurationMs / 5
                     
-                    val timeFormatCompact = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+                    // ✅ FIX: Folosim timezone-ul locației pentru formatare
+                    val timeFormatCompact = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).apply {
+                        this.timeZone = locationTimeZone
+                    }
                     
-                    // ✅ Afișăm TOATE SubTattvas COMPACT (ca în poză)
+                    // ✅ Afișăm TOATE SubTattvas COMPACT
                     tattvaItem.subTattvas.forEachIndexed { index, subTattva ->
                         val subEndTimeMs = subTattva.startTime.timeInMillis + subTattvaDurationMs
                         
@@ -349,7 +368,7 @@ private fun TattvaDayItemCard(
                                 
                                 Spacer(modifier = Modifier.width(10.dp))
                                 
-                                // Text compact: HH:mm - Nume
+                                // Text compact:  HH:mm: ss - Nume
                                 Text(
                                     text = "${timeFormatCompact.format(subTattva.startTime.time)} - ${subTattva.name}",
                                     style = MaterialTheme.typography.bodyMedium,

@@ -48,9 +48,9 @@ fun AppNavigation() {
     val locationViewModel: LocationViewModel = viewModel()
     val astroViewModel: AstroViewModel = viewModel()
     
-    val astroData by mainViewModel. astroData.collectAsState()
+    val astroData by mainViewModel.astroData.collectAsState()
     val isLoading by mainViewModel.isLoading.collectAsState()
-    val codeMode by mainViewModel.codeMode. collectAsState()
+    val codeMode by mainViewModel.codeMode.collectAsState()
     
     NavHost(
         navController = navController,
@@ -79,29 +79,27 @@ fun AppNavigation() {
         // LOCATION SCREEN
         // ════════════════════════════════════
         composable("location") {
-		LocationScreen(
-			viewModel = locationViewModel,
-			mainViewModel = mainViewModel,
-			onLocationSelected = { location ->
-				android.util.Log.d("MainActivity", "🟢 onLocationSelected called:  ${location.name} (${location.latitude}, ${location.longitude})")
-				mainViewModel.setLocation(location)
-				android.util.Log.d("MainActivity", "🟢 After setLocation, calling popBackStack...")
-				navController.popBackStack()
-				android.util.Log.d("MainActivity", "🟢 After popBackStack, calling refresh...")
-				mainViewModel.refresh()
-				android.util.Log.d("MainActivity", "🟢 Refresh completed!")
-			},
-			onBack = {
-				android. util.Log.d("MainActivity", "🔵 onBack called")
-				navController.popBackStack()
-				android.util.Log.d("MainActivity", "🔵 Calling refresh after back...")
-				mainViewModel.refresh()
-				android.util.Log.d("MainActivity", "🔵 Back refresh completed!")
-			}
-		)
-	}
-		
-		
+            LocationScreen(
+                viewModel = locationViewModel,
+                mainViewModel = mainViewModel,
+                onLocationSelected = { location ->
+                    android.util.Log.d("MainActivity", "🟢 onLocationSelected called:  ${location.name} (${location.latitude}, ${location.longitude})")
+                    mainViewModel.setLocation(location)
+                    android.util.Log.d("MainActivity", "🟢 After setLocation, calling popBackStack...")
+                    navController.popBackStack()
+                    android.util.Log.d("MainActivity", "🟢 After popBackStack, calling refresh...")
+                    mainViewModel.refresh()
+                    android.util.Log.d("MainActivity", "🟢 Refresh completed!")
+                },
+                onBack = {
+                    android.util.Log.d("MainActivity", "🔵 onBack called")
+                    navController.popBackStack()
+                    android.util.Log.d("MainActivity", "🔵 Calling refresh after back...")
+                    mainViewModel.refresh()
+                    android.util.Log.d("MainActivity", "🔵 Back refresh completed!")
+                }
+            )
+        }
         
         // ════════════════════════════════════
         // ALL DAY SCREEN
@@ -109,7 +107,7 @@ fun AppNavigation() {
         composable("allday") {
             if (astroData != null) {
                 val tattvaDaySchedule = remember(astroData) {
-                    astroViewModel. generateTattvaDayScheduleWithCurrentTime(
+                    astroViewModel.generateTattvaDayScheduleWithCurrentTime(
                         astroData = astroData!! ,
                         currentTime = Calendar.getInstance()
                     )
@@ -117,12 +115,13 @@ fun AppNavigation() {
                 
                 AllDayScreen(
                     tattvaDaySchedule = tattvaDaySchedule,
-                    sunriseDate = astroData!! .sunrise,
-                    sunriseTime = astroData!!. sunriseFormatted,
+                    sunriseDate = astroData!!.sunrise,
+                    sunriseTime = astroData!!.sunriseFormatted,
                     sunsetTime = astroData!!.sunsetFormatted,
-                    actualSunriseTime = astroData!!. sunrise,
+                    actualSunriseTime = astroData!!.sunrise,
+                    timeZone = astroData!!.timeZone,  // ✅ FIX:  Trimitem timezone-ul locației! 
                     onBackClick = {
-                        navController. popBackStack()
+                        navController.popBackStack()
                     },
                     onNextDayClick = {
                         // TODO: Implementare NEXT DAY

@@ -86,15 +86,15 @@ fun MainScreen(
                 }
 
                 // Moon Phase Card
-				item(key = "moon_phase") {
-					MoonPhaseCard(
-						moonSign = astroData.moonSign,
-						moonPhase = astroData.moonPhase
-					)
-				}
-				
-				
-				// Planetary Hours Card
+                item(key = "moon_phase") {
+                    MoonPhaseCard(
+                        moonSign = astroData.moonSign,
+                        moonPhase = astroData.moonPhase
+                    )
+                }
+                
+                
+                // Planetary Hours Card
                 item(key = "planetary_hours") {
                     val nextSunrise = astroData.sunrise.clone() as Calendar
                     nextSunrise.add(Calendar.DAY_OF_MONTH, 1)
@@ -157,9 +157,19 @@ private fun CompactInfoCard(
     }
 
     val tattvaColor = astroData.tattva.toTattvaInfo().color
+    
+    // ✅ Calculează timezone-ul locației
+    val locationOffsetMillis = (astroData.timeZone * 3600 * 1000).toInt()
+    val locationTimeZone = SimpleTimeZone(locationOffsetMillis, "Location")
+    
+    // ✅ Calculează timezone-ul telefonului
+    val phoneTimeZone = TimeZone.getDefault()
+    val phoneOffsetHours = phoneTimeZone.rawOffset / (1000.0 * 60.0 * 60.0)
+    
+    // ✅ Verifică dacă timezone-urile sunt diferite
+    val isDifferentTimeZone = kotlin.math.abs(astroData.timeZone - phoneOffsetHours) > 0.1
 
-  	
-	Card(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
@@ -183,7 +193,7 @@ private fun CompactInfoCard(
                 .padding(16.dp)
         ) {
             
-			// Primul rând:  Data/Ora + Settings/Refresh
+            // Primul rând:  Data/Ora + Settings/Refresh
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -259,19 +269,65 @@ private fun CompactInfoCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // ✅ Afișează GPS, numele locației, sau "No location"
-                Text(
-                    text = when {
-                        astroData.isGPSLocation -> "GPS"
-                        astroData.locationName.isNotEmpty() -> astroData.locationName
-                        else -> "No location"
-                    },
-                    style = MaterialTheme.typography.titleMedium,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
+                // ✅ Coloană pentru nume locație + ora locală (dacă e diferit timezone-ul)
+                Column(
                     modifier = Modifier.weight(1f)
-                )
+                ) {
+                    // ✅ Afișează GPS, numele locației, sau "No location"
+                    Text(
+                        text = when {
+                            astroData.isGPSLocation -> "GPS"
+                            astroData.locationName.isNotEmpty() -> astroData.locationName
+                            else -> "No location"
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    
+                    // ✅ NOU:  Afișează ora locală DOAR dacă timezone-ul e diferit de cel al telefonului
+                    if (isDifferentTimeZone) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        
+                        // ✅ Formatăm ora curentă în timezone-ul locației
+                        val localTimeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).apply {
+                            timeZone = locationTimeZone
+                        }
+                        
+                        // ✅ Formatăm GMT offset (ex: GMT-05:00)
+                        val gmtOffsetHours = astroData.timeZone.toInt()
+                        val gmtOffsetMinutes = ((kotlin.math.abs(astroData.timeZone) % 1) * 60).toInt()
+                        val gmtSign = if (astroData.timeZone >= 0) "+" else "-"
+                        val gmtOffsetFormatted = String.format("GMT%s%02d:%02d", gmtSign, kotlin.math.abs(gmtOffsetHours), gmtOffsetMinutes)
+                        
+                        // ✅ Formatăm offset-ul scurt pentru paranteze (ex: -0500)
+                        val offsetShort = String.format("%s%02d%02d", gmtSign, kotlin.math.abs(gmtOffsetHours), gmtOffsetMinutes)
+                        
+						/**
+						Spacer(modifier = Modifier.height(4.dp))
+						HorizontalDivider(color = Color.White.copy(alpha = 0.3f), thickness = 1.dp)
+						Spacer(modifier = Modifier.height(6.dp))
+						*/
+						
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // ✅ Icon de ceas (folosim emoji sau text)
+                            
+                            
+                            Spacer(modifier = Modifier.width(4.dp))
+                            
+                            // ✅ Ora locală + GMT offset
+                            Text(
+                                text = "Local time: ${localTimeFormat.format(currentTime.time)} $gmtOffsetFormatted",
+                                style = MaterialTheme.typography.bodySmall,
+                                fontSize = 12.sp,
+                                color = Color.White.copy(alpha = 0.9f)
+                            )
+                        }
+                    }
+                }
 
                 Icon(
                     imageVector = Icons.Default.LocationOn,
@@ -281,7 +337,7 @@ private fun CompactInfoCard(
                 )
             }
 
-                        Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // ✅ Al treilea rând: Sunrise/Sunset AZI (font mare)
             Row(
@@ -293,7 +349,7 @@ private fun CompactInfoCard(
                     Text(
                         text = astroData.sunrisePolaritySymbol,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontSize = 16.sp,  // ✅ Setare dimensiune polaritate
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
@@ -301,26 +357,26 @@ private fun CompactInfoCard(
                     Text(
                         text = "↑",
                         style = MaterialTheme.typography.bodyMedium,
-                        fontSize = 22.sp,  // ✅ Setare dimensiune săgeată
-                        fontWeight = FontWeight. Bold,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Text(
                         text = astroData.sunriseFormatted,
                         style = MaterialTheme.typography.bodyMedium,
-                        fontSize = 16.sp,  // ✅ Setare dimensiune oră
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White.copy(alpha = 0.9f)
                     )
                 }
 
                 // Apus AZI cu polaritate
-                Row(verticalAlignment = Alignment. CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = astroData.sunsetPolaritySymbol,
                         style = MaterialTheme.typography.bodyMedium,
                         fontSize = 16.sp,
-                        fontWeight = FontWeight. Bold,
+                        fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
                     Spacer(modifier = Modifier.width(4.dp))
@@ -342,10 +398,10 @@ private fun CompactInfoCard(
             }
 
             // ✅ Al patrulea rând: Sunrise/Sunset MÂINE (font 16, transparență)
-            Spacer(modifier = Modifier. height(4.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             
             Row(
-                modifier = Modifier. fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 // Răsărit MÂINE
@@ -353,9 +409,9 @@ private fun CompactInfoCard(
                     Text(
                         text = astroData.nextSunrisePolaritySymbol,
                         style = MaterialTheme.typography.bodySmall,
-                        fontSize = 16.sp,  // ✅ Mai mic decât azi
+                        fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color. White. copy(alpha = 0.7f)
+                        color = Color.White.copy(alpha = 0.7f)
                     )
                     Spacer(modifier = Modifier.width(3.dp))
                     Text(
@@ -363,11 +419,11 @@ private fun CompactInfoCard(
                         style = MaterialTheme.typography.bodySmall,
                         fontSize = 22.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color. White. copy(alpha = 0.7f)
+                        color = Color.White.copy(alpha = 0.7f)
                     )
                     Text(
                         text = astroData.nextSunriseFormatted,
-                        style = MaterialTheme.typography. bodySmall,
+                        style = MaterialTheme.typography.bodySmall,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White.copy(alpha = 0.7f)
@@ -378,7 +434,7 @@ private fun CompactInfoCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = astroData.nextSunsetPolaritySymbol,
-                        style = MaterialTheme. typography.bodySmall,
+                        style = MaterialTheme.typography.bodySmall,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.White.copy(alpha = 0.7f)
@@ -396,7 +452,7 @@ private fun CompactInfoCard(
                         style = MaterialTheme.typography.bodySmall,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White. copy(alpha = 0.7f)
+                        color = Color.White.copy(alpha = 0.7f)
                     )
                 }
             }
