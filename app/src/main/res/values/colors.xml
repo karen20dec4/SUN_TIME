@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Material Design 3 Color Scheme (Orange/Sun theme) -->
+    <color name="md_theme_primary">#FF6D00</color>
+    <color name="md_theme_onPrimary">#FFFFFF</color>
+    <color name="md_theme_primaryContainer">#FFAB40</color>
+    <color name="md_theme_onPrimaryContainer">#3E2723</color>
+
+    <color name="md_theme_secondary">#FF9800</color>
+    <color name="md_theme_onSecondary">#FFFFFF</color>
+    <color name="md_theme_secondaryContainer">#FFE0B2</color>
+    <color name="md_theme_onSecondaryContainer">#4E342E</color>
+
+    <color name="md_theme_tertiary">#FFC107</color>
+    <color name="md_theme_onTertiary">#FFFFFF</color>
+
+    <color name="md_theme_error">#BA1A1A</color>
+    <color name="md_theme_onError">#FFFFFF</color>
+
+    <color name="md_theme_background">#FFFBFE</color>
+    <color name="md_theme_onBackground">#1C1B1F</color>
+
+    <color name="md_theme_surface">#FFFBFE</color>
+    <color name="md_theme_onSurface">#1C1B1F</color>
+
+    <!-- Tattva Colors (din tema ta) -->
+    <color name="akasha_color">#2C1745</color>
+    <color name="vayu_color">#000088</color>
+    <color name="tejas_color">#880000</color>
+    <color name="apas_color">#5A5A5A</color>
+    <color name="prithivi_color">#504008</color>
+</resources>

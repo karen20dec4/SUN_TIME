@@ -1,0 +1,8 @@
+<resources>
+    <!-- Theme pentru Jetpack Compose (fără atribute Material3) -->
+    <style name="Theme.SUN" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Status bar color -->
+        <item name="android:statusBarColor">#FF6D00</item>
+        <item name="android:navigationBarColor">#FFFFFF</item>
+    </style>
+</resources>
